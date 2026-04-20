@@ -1,51 +1,139 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useMemo } from 'react'
 
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Slider } from '@/components/ui/slider'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import type { Locale } from '@/lib/i18n/copy'
+import { RD_PROVINCE_OPTIONS, getMunicipalitiesForProvince } from '@/lib/rd-admin-divisions'
 
-export function PropertyFilters() {
+const Q_PROV = 'provincia'
+const Q_MUN = 'municipio'
+
+export function PropertyFilters({ locale }: { locale: Locale }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const provinceSlug = searchParams.get(Q_PROV) ?? ''
+  const municipalitySlug = searchParams.get(Q_MUN) ?? ''
+
+  const municipalities = useMemo(
+    () => (provinceSlug ? getMunicipalitiesForProvince(provinceSlug) : []),
+    [provinceSlug],
+  )
+
+  const setQuery = useCallback(
+    (next: { provincia?: string; municipio?: string }) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (next.provincia !== undefined) {
+        if (next.provincia) params.set(Q_PROV, next.provincia)
+        else params.delete(Q_PROV)
+      }
+      if (next.municipio !== undefined) {
+        if (next.municipio) params.set(Q_MUN, next.municipio)
+        else params.delete(Q_MUN)
+      }
+      const qs = params.toString()
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    },
+    [pathname, router, searchParams],
+  )
+
+  const t =
+    locale === 'es'
+      ? {
+          province: 'Provincia o Distrito Nacional',
+          municipality: 'Municipio',
+          all: 'Todas',
+          allMuni: 'Todos',
+          clear: 'Limpiar filtros',
+        }
+      : {
+          province: 'Province or National District',
+          municipality: 'Municipality',
+          all: 'All',
+          allMuni: 'All',
+          clear: 'Clear filters',
+        }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="mt-8 rounded-2xl border border-seed-forest/10 bg-white/70 p-6 shadow-sm backdrop-blur"
     >
-      <div className="grid gap-6 md:grid-cols-3">
-        <div>
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Zona</Label>
-          <Select defaultValue="all">
-            <SelectTrigger className="mt-2">
-              <SelectValue placeholder="Todas" />
+      <div className="flex flex-col gap-6 md:flex-row md:items-end">
+        <div className="min-w-0 flex-1">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t.province}</Label>
+          <Select
+            value={provinceSlug || 'all'}
+            onValueChange={(v) => {
+              const val = v ?? ''
+              if (val === 'all') {
+                setQuery({ provincia: '', municipio: '' })
+                return
+              }
+              setQuery({ provincia: val, municipio: '' })
+            }}
+          >
+            <SelectTrigger className="mt-2 w-full">
+              <SelectValue placeholder={t.all} />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="este">Zona Este</SelectItem>
-              <SelectItem value="sd">Santo Domingo</SelectItem>
-              <SelectItem value="lm">La Romana</SelectItem>
+            <SelectContent className="max-h-[min(24rem,70vh)]">
+              <SelectItem value="all">{t.all}</SelectItem>
+              {RD_PROVINCE_OPTIONS.map((p) => (
+                <SelectItem key={p.value} value={p.value}>
+                  {locale === 'es' ? p.labelEs : p.labelEn}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Presupuesto (USD)</Label>
-          <Slider defaultValue={[750000]} max={5000000} min={300000} step={50000} className="mt-6" />
-          <p className="mt-2 text-xs text-muted-foreground">Desliza para acotar (demo visual)</p>
-        </div>
-        <div>
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Estilo</Label>
-          <Select defaultValue="any">
-            <SelectTrigger className="mt-2">
-              <SelectValue />
+        <div className="min-w-0 flex-1">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t.municipality}</Label>
+          <Select
+            value={municipalitySlug || 'all'}
+            onValueChange={(v) => {
+              const val = v ?? ''
+              if (val === 'all') {
+                setQuery({ municipio: '' })
+                return
+              }
+              setQuery({ municipio: val })
+            }}
+            disabled={!provinceSlug}
+          >
+            <SelectTrigger className="mt-2 w-full">
+              <SelectValue placeholder={t.allMuni} />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="any">Cualquiera</SelectItem>
-              <SelectItem value="villa">Villa</SelectItem>
-              <SelectItem value="penthouse">Penthouse</SelectItem>
+            <SelectContent className="max-h-[min(24rem,70vh)]">
+              <SelectItem value="all">{t.allMuni}</SelectItem>
+              {municipalities.map((m) => (
+                <SelectItem key={m.value} value={m.municipalitySlug}>
+                  {locale === 'es' ? m.labelEs.split(' — ').pop() : m.labelEn.split(' — ').pop()}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="shrink-0 rounded-full border-seed-forest/25"
+          onClick={() => setQuery({ provincia: '', municipio: '' })}
+        >
+          {t.clear}
+        </Button>
       </div>
     </motion.div>
   )

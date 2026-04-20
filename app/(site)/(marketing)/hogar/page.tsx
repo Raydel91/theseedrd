@@ -12,6 +12,17 @@ export async function generateMetadata(): Promise<Metadata> {
   })
 }
 
-export default function HogarPage() {
-  return <PropertiesPage locale="es" />
+export default async function HogarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ provincia?: string; municipio?: string }>
+}) {
+  const sp = await searchParams
+  return (
+    <PropertiesPage
+      locale="es"
+      filterProvince={sp.provincia}
+      filterMunicipality={sp.municipio}
+    />
+  )
 }

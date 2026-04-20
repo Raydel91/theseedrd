@@ -12,6 +12,17 @@ export async function generateMetadata(): Promise<Metadata> {
   })
 }
 
-export default function HomesEnPage() {
-  return <PropertiesPage locale="en" />
+export default async function HomesEnPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ provincia?: string; municipio?: string }>
+}) {
+  const sp = await searchParams
+  return (
+    <PropertiesPage
+      locale="en"
+      filterProvince={sp.provincia}
+      filterMunicipality={sp.municipio}
+    />
+  )
 }
