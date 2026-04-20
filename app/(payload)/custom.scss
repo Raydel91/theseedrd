@@ -1,0 +1,62 @@
+/* Admin UI — alineado con The Seed RD (bosque + turquesa) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap');
+
+:root {
+  --theme-bg: #0a1f1a;
+  --theme-elevation-0: #0a3d2f;
+  --theme-elevation-50: #0f6b4f;
+  --theme-text: #f5f0e8;
+  --theme-success-500: #00bfa5;
+  --theme-border-color: rgba(245, 240, 232, 0.12);
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Playfair Display', Georgia, serif;
+}
+
+.template-default,
+.app-header,
+.nav {
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+.app-header__label {
+  font-family: var(--font-heading);
+  letter-spacing: 0.02em;
+}
+
+.btn--style-primary,
+.submit-field button[type='submit'] {
+  background: linear-gradient(135deg, #0f6b4f 0%, #00bfa5 100%) !important;
+  border: none !important;
+  box-shadow: 0 8px 24px rgba(0, 191, 165, 0.25);
+}
+
+/* Campos de formulario: texto legible sobre fondo oscuro del admin */
+.template-default input:not([type='checkbox']):not([type='radio']):not([type='range']),
+.template-default textarea,
+.template-default select,
+.template-default [class*='input'] input,
+.template-default .field-type .input-field,
+.template-default .field-type .input-field input {
+  background-color: #f5f0e8 !important;
+  color: #0a1f1a !important;
+  border: 1px solid rgba(10, 31, 26, 0.22) !important;
+}
+
+.template-default input::placeholder,
+.template-default textarea::placeholder {
+  color: rgba(10, 31, 26, 0.45) !important;
+}
+
+.template-default .field-type .label-field,
+.template-default label.field-label {
+  color: #f5f0e8 !important;
+}
+
+.template-default .field-description,
+.template-default .field-description * {
+  color: rgba(245, 240, 232, 0.78) !important;
+}
