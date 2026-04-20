@@ -1,6 +1,6 @@
 /* eslint-disable */
 /**
- * División político-administrativa RD (31 provincias + Distrito Nacional, 158 municipios).
+ * División político-administrativa RD (31 provincias + Distrito Nacional). Filas municipales según `raw` (fuentes oficiales citan 158 municipios).
  * Generado por scripts/build-rd-divisions.mjs — no editar a mano.
  */
 export type RDProvinceSlug = 'distrito-nacional' | 'azua' | 'bahoruco' | 'barahona' | 'dajabon' | 'duarte' | 'el-seibo' | 'elias-pina' | 'espaillat' | 'hato-mayor' | 'hermanas-mirabal' | 'independencia' | 'la-altagracia' | 'la-romana' | 'la-vega' | 'maria-trinidad-sanchez' | 'monsenor-nouel' | 'monte-cristi' | 'monte-plata' | 'pedernales' | 'peravia' | 'puerto-plata' | 'samana' | 'san-cristobal' | 'san-jose-de-ocoa' | 'san-juan' | 'san-pedro-de-macoris' | 'sanchez-ramirez' | 'santiago' | 'santiago-rodriguez' | 'santo-domingo' | 'valverde'

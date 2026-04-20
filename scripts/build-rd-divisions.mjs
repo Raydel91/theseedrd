@@ -73,7 +73,7 @@ const raw = [
       'Eugenio María de Hostos',
       'Las Guáranas',
       'Pimentel',
-      'Villa Riva',
+      'Villa Riva', // suele faltar en listas resumidas; clave duarte__villa-riva
     ],
   ],
   ['el-seibo', 'El Seibo', 'El Seibo', ['El Seibo (Santa Cruz de El Seibo)', 'Miches']],
@@ -166,7 +166,7 @@ const raw = [
       'Los Cacaos',
       'Sabana Grande de Palenque',
       'San Gregorio de Nigua',
-      'Villa Altagracia',
+      'Villa Altagracia', // suele faltar en listas resumidas; clave san-cristobal__villa-altagracia
       'Yaguate',
     ],
   ],
@@ -233,7 +233,7 @@ const raw = [
       'Santo Domingo Este',
       'Boca Chica',
       'Los Alcarrizos',
-      'Pedro Brand',
+      'Pedro Brand', // suele faltar en listas resumidas; clave santo-domingo__pedro-brand
       'San Antonio de Guerra',
       'Santo Domingo Norte',
       'Santo Domingo Oeste',
@@ -260,9 +260,21 @@ for (const [pSlug, labelEs, labelEn, munis] of raw) {
   }
 }
 
+/** Claves compuestas que no deben eliminarse al editar el catálogo (complemento frecuente a listas cortas). */
+const REQUIRED_DIVISION_KEYS = [
+  'duarte__villa-riva',
+  'san-cristobal__villa-altagracia',
+  'santo-domingo__pedro-brand',
+]
+for (const key of REQUIRED_DIVISION_KEYS) {
+  if (!seen.has(key)) {
+    throw new Error(`Falta municipio requerido en datos RD: ${key}`)
+  }
+}
+
 const out = `/* eslint-disable */
 /**
- * División político-administrativa RD (31 provincias + Distrito Nacional, 158 municipios).
+ * División político-administrativa RD (31 provincias + Distrito Nacional). Filas municipales según \`raw\` (fuentes oficiales citan 158 municipios).
  * Generado por scripts/build-rd-divisions.mjs — no editar a mano.
  */
 export type RDProvinceSlug = ${raw.map((r) => `'${r[0]}'`).join(' | ')}
