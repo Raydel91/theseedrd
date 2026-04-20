@@ -1,15 +1,6 @@
-import { MarketingLayout } from '@/components/site/marketing-layout'
-import { defaultWhatsapp, getSiteConfig } from '@/lib/site-data'
+import { MarketingLayoutFrame } from '@/components/site/marketing-layout'
 
-export const dynamic = 'force-dynamic'
-
-export default async function EsMarketingLayout({ children }: { children: React.ReactNode }) {
-  const cfg = await getSiteConfig('es')
-  const phone = cfg?.whatsappPhone || defaultWhatsapp()
-
-  return (
-    <MarketingLayout locale="es" whatsapp={phone} site={cfg}>
-      {children}
-    </MarketingLayout>
-  )
+/** El layout ya no hace await a Payload: el shell renderiza al instante. */
+export default function EsMarketingLayout({ children }: { children: React.ReactNode }) {
+  return <MarketingLayoutFrame locale="es">{children}</MarketingLayoutFrame>
 }

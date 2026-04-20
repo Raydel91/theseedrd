@@ -1,4 +1,5 @@
 import { headers } from 'next/headers'
+import type { Viewport } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 
 import { AppProviders } from '@/components/providers/app-providers'
@@ -12,9 +13,16 @@ const inter = Inter({
 const playfair = Playfair_Display({
   subsets: ['latin'],
   variable: '--font-heading-serif',
-  weight: ['400', '500', '600', '700'],
+  weight: ['500', '700'],
   display: 'swap',
 })
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: [{ media: '(prefers-color-scheme: light)', color: '#f5f0e8' }],
+}
 
 /** Documento del sitio público (ES/EN, login, dashboard cliente). `/admin` no pasa por aquí. */
 export default async function SiteDocumentLayout({

@@ -12,17 +12,24 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default async function LoginEnPage() {
+export default async function LoginEnPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string | string[] }>
+}) {
   const session = await auth()
   if (session?.user?.role === 'client') {
     redirect('/en/dashboard')
   }
 
   const isStaff = session?.user?.role === 'admin' || session?.user?.role === 'staff'
+  const sp = await searchParams
+  const raw = sp.callbackUrl
+  const callbackUrlParam = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : undefined
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-seed-sand via-background to-seed-sand-dark/50 px-4">
-      {isStaff ? <StaffSessionCard locale="en" /> : <LoginForm locale="en" />}
+      {isStaff ? <StaffSessionCard locale="en" /> : <LoginForm locale="en" callbackUrl={callbackUrlParam} />}
     </div>
   )
 }

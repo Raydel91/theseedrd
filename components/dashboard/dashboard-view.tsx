@@ -100,7 +100,7 @@ export function DashboardView({
                 key={`${step.label}-${i}`}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
+                transition={{ delay: i * 0.05, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                 className="flex gap-3"
               >
                 {step.completed ? (

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { signIn } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -22,10 +22,16 @@ const schema = z.object({
   password: z.string().min(1),
 })
 
-export function LoginForm({ locale }: { locale: Locale }) {
+export function LoginForm({
+  locale,
+  callbackUrl: callbackUrlFromQuery,
+}: {
+  locale: Locale
+  /** Lo pasa la página servidor desde `searchParams` (evita useSearchParams y el bloqueo "Rendering…"). */
+  callbackUrl?: string
+}) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const callbackUrl = safeInternalPath(searchParams.get('callbackUrl'), routeMap[locale].dashboard)
+  const callbackUrl = safeInternalPath(callbackUrlFromQuery ?? null, routeMap[locale].dashboard)
   const [error, setError] = useState<string | null>(null)
   const r = routeMap[locale]
 

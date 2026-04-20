@@ -68,8 +68,9 @@ export function PropertyFilters({ locale }: { locale: Locale }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       className="mt-8 rounded-2xl border border-seed-forest/10 bg-white/70 p-6 shadow-sm backdrop-blur"
     >
       <div className="flex flex-col gap-6 md:flex-row md:items-end">

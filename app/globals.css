@@ -126,11 +126,12 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
-    @apply font-sans;
+    @apply font-sans overflow-x-clip;
+  }
+  body {
+    @apply bg-background text-foreground overflow-x-clip;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -142,4 +143,24 @@
 .dark {
   --seed-glass: rgba(10, 31, 26, 0.72);
   --seed-glass-border: rgba(0, 191, 165, 0.15);
+}
+
+/**
+ * Viewport ancho + táctil: no duplicar la barra central (menú nativo fuera del header).
+ */
+@media (min-width: 1024px) and (pointer: coarse) {
+  .site-header-desktop-nav {
+    display: none !important;
+  }
+}
+
+/**
+ * Overlay no es hermano del checkbox (checkbox está en el header). `body:has(:checked)` es el refuerzo.
+ */
+@media (max-width: 1023px) {
+  body:has(#the-seed-mobile-nav:checked) .the-seed-mobile-overlay {
+    display: flex !important;
+    pointer-events: auto;
+    background-color: rgb(0 0 0 / 0.45);
+  }
 }

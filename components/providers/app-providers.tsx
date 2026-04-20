@@ -18,7 +18,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <RejectionGuard />
       <TooltipProvider>
         {children}
-        <Toaster richColors position="top-center" theme="light" />
+        <Toaster richColors position="bottom-center" theme="light" />
       </TooltipProvider>
     </SessionProvider>
   )

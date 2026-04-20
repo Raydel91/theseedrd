@@ -3,9 +3,10 @@ import { TestimonialCarousel, type TestimonialItem } from '@/components/sections
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { Locale } from '@/lib/i18n/copy'
+import type { Testimonial } from '@/payload-types'
 import { absoluteMediaUrl } from '@/lib/media-url'
 import { getPayloadInstance } from '@/lib/payload-server'
-import { getSiteConfig } from '@/lib/site-data'
+import { getSiteConfig, pickLocalizedString, runWithTimeout } from '@/lib/site-data'
 import { routeMap } from '@/lib/i18n/routes'
 import Link from 'next/link'
 
@@ -23,17 +24,42 @@ const blurbs = {
 } as const
 
 export async function HomeContent({ locale }: { locale: Locale }) {
-  const payload = await getPayloadInstance()
-  const site = await getSiteConfig(locale)
-  const testimonials = await payload.find({
-    collection: 'testimonials',
-    limit: 12,
-    depth: 1,
-    locale,
-    where: { featured: { equals: true } },
-  })
+  const [siteEs, siteEn, testimonialsResult] = await Promise.all([
+    getSiteConfig('es'),
+    getSiteConfig('en'),
+    (async () => {
+      try {
+        const found = await runWithTimeout(
+          (async () => {
+            const payload = await getPayloadInstance()
+            return await payload.find({
+              collection: 'testimonials',
+              limit: 12,
+              depth: 1,
+              locale,
+              where: { featured: { equals: true } },
+            })
+          })(),
+          25000,
+          '[HomeContent] testimonials',
+        )
+        if (found == null) return { docs: [] as Testimonial[] }
+        return found
+      } catch (e) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[HomeContent] testimonios omitidos:', e)
+        }
+        return { docs: [] as Testimonial[] }
+      }
+    })(),
+  ])
 
-  const items: TestimonialItem[] = testimonials.docs.map((doc) => {
+  const site = locale === 'es' ? siteEs : siteEn
+  const siteAlt = locale === 'es' ? siteEn : siteEs
+
+  const testimonials = testimonialsResult
+
+  const items: TestimonialItem[] = testimonials.docs.map((doc: Testimonial) => {
     const photo = doc.photo
     let url: string | undefined
     if (typeof photo === 'object' && photo && 'url' in photo && photo.url) {
@@ -49,16 +75,20 @@ export async function HomeContent({ locale }: { locale: Locale }) {
     }
   })
 
-  const title =
-    (site?.heroTitle as string) ||
-    (locale === 'es'
+  const title = pickLocalizedString(
+    site?.heroTitle,
+    siteAlt?.heroTitle,
+    locale === 'es'
       ? 'Tu nuevo comienzo en el Caribe, con confianza absoluta'
-      : 'Your new beginning in the Caribbean, with absolute confidence')
-  const subtitle =
-    (site?.heroSubtitle as string) ||
-    (locale === 'es'
+      : 'Your new beginning in the Caribbean, with absolute confidence',
+  )
+  const subtitle = pickLocalizedString(
+    site?.heroSubtitle,
+    siteAlt?.heroSubtitle,
+    locale === 'es'
       ? 'Legal, vivienda y lifestyle — un equipo boutique para familias y profesionales en República Dominicana.'
-      : 'Legal, home, and lifestyle — a boutique team for families and professionals in the Dominican Republic.')
+      : 'Legal, home, and lifestyle — a boutique team for families and professionals in the Dominican Republic.',
+  )
 
   const r = routeMap[locale]
 

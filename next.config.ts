@@ -41,6 +41,9 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
@@ -48,6 +51,18 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    /** En desarrollo, CSP estricta a veces interfiere con Turbopack / RSC; en prod se mantiene. */
+    if (!isProd) {
+      return [
+        {
+          source: '/:path*',
+          headers: [
+            { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+            { key: 'X-Content-Type-Options', value: 'nosniff' },
+          ],
+        },
+      ]
+    }
     return [
       {
         source: '/:path*',
