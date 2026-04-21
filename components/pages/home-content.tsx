@@ -6,7 +6,7 @@ import type { Locale } from '@/lib/i18n/copy'
 import type { Testimonial } from '@/payload-types'
 import { absoluteMediaUrl } from '@/lib/media-url'
 import { getPayloadInstance } from '@/lib/payload-server'
-import { getSiteConfig, pickLocalizedString, runWithTimeout } from '@/lib/site-data'
+import { getSiteConfig, pickLocalizedString, PAYLOAD_READ_TIMEOUT_MS, runWithTimeout } from '@/lib/site-data'
 import { routeMap } from '@/lib/i18n/routes'
 import Link from 'next/link'
 
@@ -40,7 +40,7 @@ export async function HomeContent({ locale }: { locale: Locale }) {
               where: { featured: { equals: true } },
             })
           })(),
-          25000,
+          PAYLOAD_READ_TIMEOUT_MS,
           '[HomeContent] testimonials',
         )
         if (found == null) return { docs: [] as Testimonial[] }

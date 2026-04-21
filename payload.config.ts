@@ -103,10 +103,20 @@ export default buildConfig({
     },
     /** Espera si la BD está bloqueada (dev / Windows). */
     busyTimeout: 8000,
+    /**
+     * Por defecto el adaptador usa SQLite sin WAL: un solo escritor y lecturas peor concurrentes.
+     * Con varias peticiones RSC + admin, conviene WAL (mejor rendimiento y menos “colas”).
+     */
+    wal: true,
   }),
   sharp,
   onInit: async (payload) => {
-    await seedPropertyTaxonomies(payload)
+    /** No bloquear el primer request: el seed ya es idempotente y rápido si la BD está poblada. */
+    queueMicrotask(() => {
+      void seedPropertyTaxonomies(payload).catch((err: unknown) => {
+        console.error('[payload] seedPropertyTaxonomies', err)
+      })
+    })
   },
   plugins: [
     seoPlugin({

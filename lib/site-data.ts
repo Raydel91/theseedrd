@@ -2,6 +2,12 @@ import { cache } from 'react'
 
 import { getPayloadInstance } from '@/lib/payload-server'
 
+/** En dev, fallar antes evita que la RSC espere decenas de s si SQLite está bloqueado o hay contención. */
+const SITE_CONFIG_TIMEOUT_MS = process.env.NODE_ENV === 'production' ? 30000 : 8000
+
+/** Lecturas Payload (testimonios, etc.): mismo criterio que site-config en dev. */
+export const PAYLOAD_READ_TIMEOUT_MS = process.env.NODE_ENV === 'production' ? 25000 : 8000
+
 /**
  * Si Payload/SQLite se bloquea (p. ej. otro proceso con la BD abierta en Windows),
  * sin tope la RSC puede quedar colgada y la página “no carga”. Tras `ms`, devuelve null.
@@ -45,7 +51,7 @@ export const getSiteConfig = cache(async (locale: 'es' | 'en') => {
           depth: 1,
         })
       })(),
-      30000,
+      SITE_CONFIG_TIMEOUT_MS,
       `[getSiteConfig:${locale}]`,
     )
     return doc
