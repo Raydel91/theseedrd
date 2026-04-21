@@ -117,13 +117,15 @@ const AMENITIES: {
 ]
 
 async function ensureHouseTypes(payload: Payload) {
+  const allSlugs = HOUSE_TYPES.map((h) => h.slug)
+  const existing = await payload.find({
+    collection: 'house-types',
+    where: { slug: { in: allSlugs } },
+    limit: Math.max(200, allSlugs.length),
+  })
+  const have = new Set(existing.docs.map((d) => (d as { slug?: string }).slug).filter(Boolean))
   for (const row of HOUSE_TYPES) {
-    const found = await payload.find({
-      collection: 'house-types',
-      where: { slug: { equals: row.slug } },
-      limit: 1,
-    })
-    if (found.docs.length > 0) continue
+    if (have.has(row.slug)) continue
     const created = await payload.create({
       collection: 'house-types',
       locale: 'es',
@@ -143,13 +145,15 @@ async function ensureHouseTypes(payload: Payload) {
 }
 
 async function ensurePropertyTags(payload: Payload) {
+  const allSlugs = PROPERTY_TAGS.map((h) => h.slug)
+  const existing = await payload.find({
+    collection: 'property-tags',
+    where: { slug: { in: allSlugs } },
+    limit: Math.max(200, allSlugs.length),
+  })
+  const have = new Set(existing.docs.map((d) => (d as { slug?: string }).slug).filter(Boolean))
   for (const row of PROPERTY_TAGS) {
-    const found = await payload.find({
-      collection: 'property-tags',
-      where: { slug: { equals: row.slug } },
-      limit: 1,
-    })
-    if (found.docs.length > 0) continue
+    if (have.has(row.slug)) continue
     const created = await payload.create({
       collection: 'property-tags',
       locale: 'es',
@@ -170,13 +174,15 @@ async function ensurePropertyTags(payload: Payload) {
 }
 
 async function ensureAmenities(payload: Payload) {
+  const allSlugs = AMENITIES.map((h) => h.slug)
+  const existing = await payload.find({
+    collection: 'property-amenities',
+    where: { slug: { in: allSlugs } },
+    limit: Math.max(200, allSlugs.length),
+  })
+  const have = new Set(existing.docs.map((d) => (d as { slug?: string }).slug).filter(Boolean))
   for (const row of AMENITIES) {
-    const found = await payload.find({
-      collection: 'property-amenities',
-      where: { slug: { equals: row.slug } },
-      limit: 1,
-    })
-    if (found.docs.length > 0) continue
+    if (have.has(row.slug)) continue
     const created = await payload.create({
       collection: 'property-amenities',
       locale: 'es',
@@ -196,8 +202,27 @@ async function ensureAmenities(payload: Payload) {
   }
 }
 
+/**
+ * Antes: ~115 consultas `find` secuenciales en cada arranque → bloqueaba Payload y la 1.ª petición.
+ * Ahora: si ya hay datos sembrados, 3 `count` y salida; si falta algo, como mucho 3 `find in` + creates.
+ */
 export async function seedPropertyTaxonomies(payload: Payload): Promise<void> {
-  await ensureHouseTypes(payload)
-  await ensurePropertyTags(payload)
-  await ensureAmenities(payload)
+  const [cHt, cTag, cAm] = await Promise.all([
+    payload.count({ collection: 'house-types' }),
+    payload.count({ collection: 'property-tags' }),
+    payload.count({ collection: 'property-amenities' }),
+  ])
+
+  if (
+    cHt.totalDocs >= HOUSE_TYPES.length &&
+    cTag.totalDocs >= PROPERTY_TAGS.length &&
+    cAm.totalDocs >= AMENITIES.length
+  ) {
+    return
+  }
+
+  /** Secuencial: SQLite en Windows evita bloqueos si varias colecciones escriben a la vez. */
+  if (cHt.totalDocs < HOUSE_TYPES.length) await ensureHouseTypes(payload)
+  if (cTag.totalDocs < PROPERTY_TAGS.length) await ensurePropertyTags(payload)
+  if (cAm.totalDocs < AMENITIES.length) await ensureAmenities(payload)
 }
