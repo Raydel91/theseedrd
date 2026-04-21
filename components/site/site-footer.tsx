@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { routeMap } from '@/lib/i18n/routes'
 import type { Locale } from '@/lib/i18n/copy'
 import { copy } from '@/lib/i18n/copy'
+import { googleMapsEmbedFromAddress } from '@/lib/maps-embed'
 import { defaultWhatsapp } from '@/lib/site-data'
 import type { SiteConfig } from '@/payload-types'
 
@@ -42,7 +43,10 @@ export function SiteFooter({ locale, site }: { locale: Locale; site: SiteConfig 
   const rnc = site?.rnc?.trim() || null
   const instagram = site?.instagramUrl?.trim() ? ensureHttp(site.instagramUrl) : ''
   const facebook = site?.facebookUrl?.trim() ? ensureHttp(site.facebookUrl) : ''
-  const mapSrc = site?.mapEmbedUrl?.trim() || DEFAULT_MAP_EMBED
+  const customEmbed = site?.mapEmbedUrl?.trim()
+  const mapSrc =
+    customEmbed ||
+    (address ? googleMapsEmbedFromAddress(address) : DEFAULT_MAP_EMBED)
 
   return (
     <footer className="border-t border-seed-forest/10 bg-seed-forest text-primary-foreground">

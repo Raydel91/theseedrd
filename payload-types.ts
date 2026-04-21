@@ -72,6 +72,9 @@ export interface Config {
     'team-members': TeamMember;
     testimonials: Testimonial;
     packages: Package;
+    'house-types': HouseType;
+    'property-tags': PropertyTag;
+    'property-amenities': PropertyAmenity;
     properties: Property;
     'blog-posts': BlogPost;
     clients: Client;
@@ -90,6 +93,9 @@ export interface Config {
     'team-members': TeamMembersSelect<false> | TeamMembersSelect<true>;
     testimonials: TestimonialsSelect<false> | TestimonialsSelect<true>;
     packages: PackagesSelect<false> | PackagesSelect<true>;
+    'house-types': HouseTypesSelect<false> | HouseTypesSelect<true>;
+    'property-tags': PropertyTagsSelect<false> | PropertyTagsSelect<true>;
+    'property-amenities': PropertyAmenitiesSelect<false> | PropertyAmenitiesSelect<true>;
     properties: PropertiesSelect<false> | PropertiesSelect<true>;
     'blog-posts': BlogPostsSelect<false> | BlogPostsSelect<true>;
     clients: ClientsSelect<false> | ClientsSelect<true>;
@@ -293,7 +299,54 @@ export interface Package {
   createdAt: string;
 }
 /**
- * Listados para /hogar
+ * Tipos de vivienda (Villa, Penthouse, etc.). Añade filas para nuevos tipos.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "house-types".
+ */
+export interface HouseType {
+  id: number;
+  /**
+   * Único, sin espacios (ej. villa-de-lujo).
+   */
+  slug: string;
+  label: string;
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Etiquetas para filtros y SEO. Añade nuevas cuando las necesites.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "property-tags".
+ */
+export interface PropertyTag {
+  id: number;
+  slug: string;
+  label: string;
+  tagCategory: 'general' | 'style' | 'location';
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Amenidades (piscina, spa, etc.). Organizadas por categoría.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "property-amenities".
+ */
+export interface PropertyAmenity {
+  id: number;
+  slug: string;
+  label: string;
+  amenityCategory: 'exterior' | 'community' | 'interior' | 'luxury';
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Listados para /hogar — foto principal, galería y ficha completa.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "properties".
@@ -302,8 +355,9 @@ export interface Property {
   id: number;
   title: string;
   slug: string;
+  houseType: number | HouseType;
   /**
-   * División territorial oficial (31 provincias + Distrito Nacional). Elige el municipio; la etiqueta incluye la provincia.
+   * División territorial oficial. Elige el municipio; la etiqueta incluye la provincia.
    */
   rdDivision:
     | 'distrito-nacional__distrito-nacional-santo-domingo'
@@ -462,15 +516,32 @@ export interface Property {
     | 'valverde__esperanza'
     | 'valverde__laguna-salada';
   /**
-   * Texto breve visible en la ficha (barrio, urbanización, referencia).
+   * Texto breve visible en listado (barrio, urbanización, referencia).
    */
   location: string;
+  /**
+   * Opcional. Si está rellena, la ficha muestra un mapa con esta dirección. Usa formato legible para Google Maps.
+   */
+  streetAddress?: string | null;
   price: number;
   beds?: number | null;
   baths?: number | null;
   sqm?: number | null;
-  tags?: ('sea' | 'golf' | 'new' | 'investment')[] | null;
+  /**
+   * Filtros, SEO y ubicación temática (Punta Cana, estilo, etc.).
+   */
+  propertyTags?: (number | PropertyTag)[] | null;
+  amenities?: (number | PropertyAmenity)[] | null;
   coverImage: number | Media;
+  /**
+   * Hasta 15 imágenes adicionales (la principal es el campo anterior).
+   */
+  gallery?:
+    | {
+        image: number | Media;
+        id?: string | null;
+      }[]
+    | null;
   published?: boolean | null;
   meta?: {
     title?: string | null;
@@ -657,6 +728,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'packages';
         value: number | Package;
+      } | null)
+    | ({
+        relationTo: 'house-types';
+        value: number | HouseType;
+      } | null)
+    | ({
+        relationTo: 'property-tags';
+        value: number | PropertyTag;
+      } | null)
+    | ({
+        relationTo: 'property-amenities';
+        value: number | PropertyAmenity;
       } | null)
     | ({
         relationTo: 'properties';
@@ -857,19 +940,63 @@ export interface PackagesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "house-types_select".
+ */
+export interface HouseTypesSelect<T extends boolean = true> {
+  slug?: T;
+  label?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "property-tags_select".
+ */
+export interface PropertyTagsSelect<T extends boolean = true> {
+  slug?: T;
+  label?: T;
+  tagCategory?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "property-amenities_select".
+ */
+export interface PropertyAmenitiesSelect<T extends boolean = true> {
+  slug?: T;
+  label?: T;
+  amenityCategory?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "properties_select".
  */
 export interface PropertiesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
+  houseType?: T;
   rdDivision?: T;
   location?: T;
+  streetAddress?: T;
   price?: T;
   beds?: T;
   baths?: T;
   sqm?: T;
-  tags?: T;
+  propertyTags?: T;
+  amenities?: T;
   coverImage?: T;
+  gallery?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
   published?: T;
   meta?:
     | T

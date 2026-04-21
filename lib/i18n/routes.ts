@@ -37,6 +37,14 @@ export function getAlternatePath(locale: 'es' | 'en', key: RouteKey, currentPath
 
 /** Convierte la ruta actual a la misma página en el otro idioma */
 export function translatePath(pathname: string, to: 'es' | 'en'): string {
+  const hogarDetail = pathname.match(/^\/hogar\/([^/]+)\/?$/)
+  if (hogarDetail) {
+    return to === 'en' ? `/en/homes/${hogarDetail[1]}` : pathname
+  }
+  const homesEnDetail = pathname.match(/^\/en\/homes\/([^/]+)\/?$/)
+  if (homesEnDetail) {
+    return to === 'es' ? `/hogar/${homesEnDetail[1]}` : pathname
+  }
   const pairs = Object.keys(routeMap.es) as RouteKey[]
   for (const key of pairs) {
     if (routeMap.es[key] === pathname || routeMap.en[key] === pathname) {

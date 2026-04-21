@@ -16,7 +16,11 @@ import { Clients } from './payload/collections/Clients'
 import { Referrals } from './payload/collections/Referrals'
 import { ConsultationMessages } from './payload/collections/ConsultationMessages'
 import { ConsultationReadLogs } from './payload/collections/ConsultationReadLogs'
+import { HouseTypes } from './payload/collections/HouseTypes'
+import { PropertyAmenities } from './payload/collections/PropertyAmenities'
+import { PropertyTags } from './payload/collections/PropertyTags'
 import { Properties } from './payload/collections/Properties'
+import { seedPropertyTaxonomies } from './payload/seed/property-taxonomies'
 import { AdminRegistry } from './payload/globals/AdminRegistry'
 import { SiteConfig } from './payload/globals/SiteConfig'
 import { ReferralSettings } from './payload/globals/ReferralSettings'
@@ -71,6 +75,9 @@ export default buildConfig({
     TeamMembers,
     Testimonials,
     Packages,
+    HouseTypes,
+    PropertyTags,
+    PropertyAmenities,
     Properties,
     BlogPosts,
     Clients,
@@ -98,6 +105,9 @@ export default buildConfig({
     busyTimeout: 8000,
   }),
   sharp,
+  onInit: async (payload) => {
+    await seedPropertyTaxonomies(payload)
+  },
   plugins: [
     seoPlugin({
       collections: ['packages', 'properties', 'blog-posts'],
@@ -149,7 +159,7 @@ export default buildConfig({
           return `${base}/servicios#${String((doc as { slug: string }).slug)}`
         }
         if (collectionSlug === 'properties' && doc && typeof doc === 'object' && 'slug' in doc) {
-          return `${base}/hogar#${String((doc as { slug: string }).slug)}`
+          return `${base}/hogar/${String((doc as { slug: string }).slug)}`
         }
         return base
       },

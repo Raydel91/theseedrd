@@ -1,15 +1,17 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { Suspense } from 'react'
 
 import { PropertyFilters } from '@/components/site/property-filters'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { buildPropertyWhere } from '@/lib/build-property-where'
 import type { Locale } from '@/lib/i18n/copy'
-import { getRDDivisionLabels } from '@/lib/rd-admin-divisions'
+import { routeMap } from '@/lib/i18n/routes'
 import { pickLocale } from '@/lib/pick-locale'
+import { getRDDivisionLabels } from '@/lib/rd-admin-divisions'
 import { absoluteMediaUrl } from '@/lib/media-url'
 import { getPayloadInstance } from '@/lib/payload-server'
-import type { Where } from 'payload'
 
 const copy = {
   es: {
@@ -24,39 +26,90 @@ const copy = {
   },
 } as const
 
+function labelFromDoc(doc: unknown, locale: Locale): string | null {
+  if (!doc || typeof doc !== 'object') return null
+  const raw = (doc as { label?: string | { es?: string; en?: string } | null }).label
+  if (typeof raw === 'string') return raw.trim() || null
+  if (raw && typeof raw === 'object') {
+    return pickLocale(raw as { es?: string; en?: string }, locale) || null
+  }
+  return null
+}
+
+export type PropertiesListingSearch = {
+  provincia?: string
+  municipio?: string
+  region?: string
+  tipo?: string
+  cuartos?: string
+  banos?: string
+  etiquetas?: string
+}
+
 export async function PropertiesPage({
   locale,
-  filterProvince,
-  filterMunicipality,
+  search,
 }: {
   locale: Locale
-  filterProvince?: string
-  filterMunicipality?: string
+  search: PropertiesListingSearch
 }) {
   const payload = await getPayloadInstance()
 
-  const base: Where = { published: { equals: true } }
-  let where: Where = base
+  const tagSlugs = search.etiquetas?.split(',').map((s) => s.trim()).filter(Boolean)
 
-  if (filterProvince && filterMunicipality) {
-    where = {
-      and: [base, { rdDivision: { equals: `${filterProvince}__${filterMunicipality}` } }],
-    }
-  } else if (filterProvince) {
-    where = {
-      and: [base, { rdDivision: { contains: `${filterProvince}__` } }],
-    }
+  const minBeds =
+    search.cuartos && !Number.isNaN(Number(search.cuartos)) ? Number(search.cuartos) : undefined
+  const minBaths =
+    search.banos && !Number.isNaN(Number(search.banos)) ? Number(search.banos) : undefined
+
+  const filters = {
+    filterProvince: search.provincia,
+    filterMunicipality: search.municipio,
+    filterRegion: search.region,
+    filterHouseTypeSlug: search.tipo,
+    minBeds,
+    minBaths,
+    tagSlugs,
   }
 
-  const res = await payload.find({
-    collection: 'properties',
-    where,
-    depth: 1,
-    locale,
-    limit: 24,
-    sort: '-createdAt',
-  })
+  const where = await buildPropertyWhere(payload, filters)
+
+  const [res, houseTypes, propertyTags] = await Promise.all([
+    payload.find({
+      collection: 'properties',
+      where,
+      depth: 2,
+      locale,
+      limit: 48,
+      sort: '-createdAt',
+    }),
+    payload.find({
+      collection: 'house-types',
+      sort: 'sortOrder',
+      locale,
+      limit: 200,
+    }),
+    payload.find({
+      collection: 'property-tags',
+      sort: 'sortOrder',
+      locale,
+      limit: 500,
+    }),
+  ])
+
   const t = copy[locale]
+  const r = routeMap[locale]
+
+  const houseTypeOptions = houseTypes.docs.map((d) => ({
+    slug: d.slug as string,
+    label: labelFromDoc(d as { label?: unknown }, locale) ?? (d.slug as string),
+  }))
+
+  const tagOptions = propertyTags.docs.map((d) => ({
+    slug: d.slug as string,
+    label: labelFromDoc(d as { label?: unknown }, locale) ?? (d.slug as string),
+    category: (d.tagCategory as string) || 'general',
+  }))
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -64,7 +117,11 @@ export async function PropertiesPage({
       <p className="mt-3 max-w-2xl text-muted-foreground">{t.intro}</p>
 
       <Suspense fallback={<div className="mt-8 h-28 animate-pulse rounded-2xl bg-muted/30" aria-hidden />}>
-        <PropertyFilters locale={locale} />
+        <PropertyFilters
+          locale={locale}
+          houseTypeOptions={houseTypeOptions}
+          tagOptions={tagOptions}
+        />
       </Suspense>
 
       {res.docs.length === 0 ? (
@@ -74,6 +131,7 @@ export async function PropertiesPage({
           {res.docs.map((prop) => {
             const title = pickLocale(prop.title as string | { es?: string; en?: string }, locale)
             const zone = pickLocale(prop.location as string | { es?: string; en?: string }, locale)
+            const slug = prop.slug as string
             const rd = prop.rdDivision as string | null | undefined
             const geo = getRDDivisionLabels(rd ?? null, locale === 'es' ? 'es' : 'en')
             const geoLine = geo ? `${geo.province} — ${geo.municipalityLine}` : null
@@ -81,45 +139,75 @@ export async function PropertiesPage({
               typeof prop.coverImage === 'object' && prop.coverImage && 'url' in prop.coverImage
                 ? absoluteMediaUrl(prop.coverImage.url as string)
                 : null
-            const tags = (prop.tags as string[]) || []
+            const houseType =
+              typeof prop.houseType === 'object' && prop.houseType && 'label' in prop.houseType
+                ? labelFromDoc(prop.houseType as { label?: unknown }, locale)
+                : null
+            const tagDocs = Array.isArray(prop.propertyTags) ? prop.propertyTags : []
             return (
-              <Card
+              <Link
                 key={String(prop.id)}
-                className="group overflow-hidden border-seed-forest/10 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                href={`${r.homes}/${slug}`}
+                className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seed-emerald focus-visible:ring-offset-2"
               >
-                <div className="relative aspect-[4/3] overflow-hidden bg-seed-sand-dark">
-                  {cover ? (
-                    <Image
-                      src={cover}
-                      alt={title}
-                      fill
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                      sizes="(max-width:768px) 100vw, 33vw"
-                    />
-                  ) : null}
-                </div>
-                <CardContent className="p-5">
-                  {geoLine ? (
-                    <p className="text-xs uppercase tracking-wide text-seed-emerald">{geoLine}</p>
-                  ) : (
-                    <p className="text-xs uppercase tracking-wide text-seed-emerald">{zone}</p>
-                  )}
-                  <h2 className="font-heading text-lg text-seed-forest">{title}</h2>
-                  {geoLine ? (
-                    <p className="mt-1 text-sm text-muted-foreground">{zone}</p>
-                  ) : null}
-                  <p className="mt-2 text-xl font-semibold text-seed-forest">
-                    ${(prop.price as number).toLocaleString()}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs capitalize">
-                        {tag}
-                      </Badge>
-                    ))}
+                <Card className="h-full overflow-hidden border-seed-forest/10 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-seed-sand-dark">
+                    {cover ? (
+                      <Image
+                        src={cover}
+                        alt={title}
+                        fill
+                        className="object-cover transition duration-500 group-hover:scale-105"
+                        sizes="(max-width:768px) 100vw, 33vw"
+                      />
+                    ) : null}
                   </div>
-                </CardContent>
-              </Card>
+                  <CardContent className="p-5 text-left">
+                    {geoLine ? (
+                      <p className="text-xs uppercase tracking-wide text-seed-emerald">{geoLine}</p>
+                    ) : (
+                      <p className="text-xs uppercase tracking-wide text-seed-emerald">{zone}</p>
+                    )}
+                    {houseType ? (
+                      <p className="mt-1 text-xs font-medium text-muted-foreground">{houseType}</p>
+                    ) : null}
+                    <h2 className="font-heading text-lg text-seed-forest group-hover:text-seed-emerald">{title}</h2>
+                    {geoLine ? <p className="mt-1 text-sm text-muted-foreground">{zone}</p> : null}
+                    <p className="mt-2 text-xl font-semibold text-seed-forest">
+                      ${(prop.price as number).toLocaleString(locale === 'en' ? 'en-US' : 'es-DO')}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <span className="text-xs text-muted-foreground">
+                        {prop.beds as number} bd · {prop.baths as number} ba
+                        {prop.sqm != null ? ` · ${prop.sqm} m²` : ''}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {tagDocs.slice(0, 4).map((tag) => {
+                        const lab =
+                          typeof tag === 'object' && tag && 'label' in tag
+                            ? labelFromDoc(tag as { label?: unknown }, locale)
+                            : null
+                        const id =
+                          typeof tag === 'object' && tag && 'id' in tag
+                            ? String((tag as { id: unknown }).id)
+                            : ''
+                        if (!lab) return null
+                        return (
+                          <Badge key={id} variant="secondary" className="text-xs font-normal">
+                            {lab}
+                          </Badge>
+                        )
+                      })}
+                      {tagDocs.length > 4 ? (
+                        <Badge variant="outline" className="text-xs">
+                          +{tagDocs.length - 4}
+                        </Badge>
+                      ) : null}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             )
           })}
         </div>
