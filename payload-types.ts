@@ -238,6 +238,8 @@ export interface TeamMember {
   bio?: string | null;
   linkedin?: string | null;
   instagram?: string | null;
+  whatsapp?: string | null;
+  facebook?: string | null;
   order?: number | null;
   updatedAt: string;
   createdAt: string;
@@ -804,6 +806,8 @@ export interface TeamMembersSelect<T extends boolean = true> {
   bio?: T;
   linkedin?: T;
   instagram?: T;
+  whatsapp?: T;
+  facebook?: T;
   order?: T;
   updatedAt?: T;
   createdAt?: T;

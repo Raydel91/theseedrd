@@ -46,6 +46,16 @@ export const TeamMembers: CollectionConfig = {
       label: 'Instagram URL',
     },
     {
+      name: 'whatsapp',
+      type: 'text',
+      label: 'WhatsApp (número con código de país, ej. 18095551234, o URL wa.me/...)',
+    },
+    {
+      name: 'facebook',
+      type: 'text',
+      label: 'Facebook URL',
+    },
+    {
       name: 'order',
       type: 'number',
       defaultValue: 0,
