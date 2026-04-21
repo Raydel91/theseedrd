@@ -21,6 +21,7 @@ import { PropertyAmenities } from './payload/collections/PropertyAmenities'
 import { PropertyTags } from './payload/collections/PropertyTags'
 import { Properties } from './payload/collections/Properties'
 import { seedPropertyTaxonomies } from './payload/seed/property-taxonomies'
+import { seedServicePackages } from './payload/seed/seed-service-packages'
 import { AdminRegistry } from './payload/globals/AdminRegistry'
 import { SiteConfig } from './payload/globals/SiteConfig'
 import { ReferralSettings } from './payload/globals/ReferralSettings'
@@ -115,6 +116,9 @@ export default buildConfig({
     queueMicrotask(() => {
       void seedPropertyTaxonomies(payload).catch((err: unknown) => {
         console.error('[payload] seedPropertyTaxonomies', err)
+      })
+      void seedServicePackages(payload).catch((err: unknown) => {
+        console.error('[payload] seedServicePackages', err)
       })
     })
   },

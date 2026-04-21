@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import type { Locale } from '@/lib/i18n/copy'
-import { pickLocale } from '@/lib/pick-locale'
+import { pickLocaleWithFallback } from '@/lib/pick-locale'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { routeMap } from '@/lib/i18n/routes'
 import { ServiceListJsonLd } from '@/lib/seo/json-ld'
@@ -28,13 +28,14 @@ export async function ServicesPage({ locale }: { locale: Locale }) {
     collection: 'packages',
     sort: 'order',
     locale,
+    fallbackLocale: 'es',
     limit: 24,
   })
   const t = copy[locale]
   const r = routeMap[locale]
   const servicesForLd = packs.docs.map((p) => ({
-    name: pickLocale(p.title as string | { es?: string; en?: string }, locale),
-    description: pickLocale(p.shortDescription as string | { es?: string; en?: string }, locale),
+    name: pickLocaleWithFallback(p.title as string | { es?: string; en?: string }, locale),
+    description: pickLocaleWithFallback(p.shortDescription as string | { es?: string; en?: string }, locale),
   }))
 
   return (
@@ -45,15 +46,15 @@ export async function ServicesPage({ locale }: { locale: Locale }) {
       <p className="mt-4 max-w-2xl text-lg text-muted-foreground">{t.intro}</p>
       <div className="mt-14 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {packs.docs.map((p) => {
-          const title = pickLocale(p.title as string | { es?: string; en?: string }, locale)
-          const desc = pickLocale(p.shortDescription as string | { es?: string; en?: string }, locale)
+          const title = pickLocaleWithFallback(p.title as string | { es?: string; en?: string }, locale)
+          const desc = pickLocaleWithFallback(p.shortDescription as string | { es?: string; en?: string }, locale)
           const features = (p.features as { item?: string | { es?: string; en?: string } }[]) || []
           const highlighted = p.highlighted as boolean
-          const billing = pickLocale(
+          const billing = pickLocaleWithFallback(
             p.billingNote as string | { es?: string; en?: string } | undefined,
             locale,
           )
-          const cta = pickLocale(p.ctaLabel as string | { es?: string; en?: string } | undefined, locale)
+          const cta = pickLocaleWithFallback(p.ctaLabel as string | { es?: string; en?: string } | undefined, locale)
           return (
             <div key={String(p.id)}>
               <Card
@@ -75,7 +76,7 @@ export async function ServicesPage({ locale }: { locale: Locale }) {
                   <p className="text-sm text-muted-foreground">{desc}</p>
                   <ul className="mt-4 space-y-2 text-sm">
                     {features.map((f, i) => {
-                      const item = pickLocale(f.item as string | { es?: string; en?: string }, locale)
+                      const item = pickLocaleWithFallback(f.item as string | { es?: string; en?: string }, locale)
                       return (
                         <li key={i} className="flex gap-2">
                           <span className="text-seed-turquoise">✓</span>
