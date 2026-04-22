@@ -54,9 +54,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   ...(!isProd ? { allowedDevOrigins } : {}),
-  experimental: {
-    optimizePackageImports: ['lucide-react'],
-  },
+  /**
+   * `optimizePackageImports` para lucide-react ha provocado en algunos entornos
+   * errores de chunk Webpack (__webpack_modules__[moduleId] is not a function) al hidratar.
+   */
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },

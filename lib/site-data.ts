@@ -1,12 +1,14 @@
 import { cache } from 'react'
 
 import { getPayloadInstance } from '@/lib/payload-server'
+import type { SiteConfig } from '@/payload-types'
 
-/** En dev, fallar antes evita que la RSC espere decenas de s si SQLite está bloqueado o hay contención. */
-const SITE_CONFIG_TIMEOUT_MS = process.env.NODE_ENV === 'production' ? 30000 : 8000
-
-/** Lecturas Payload (testimonios, etc.): mismo criterio que site-config en dev. */
-export const PAYLOAD_READ_TIMEOUT_MS = process.env.NODE_ENV === 'production' ? 25000 : 8000
+const isProd = process.env.NODE_ENV === 'production'
+const SITE_CONFIG_TIMEOUT_MS = isProd ? 25000 : 12000
+/** Último site-config válido por locale para evitar volver a textos fijos si hay timeout puntual. */
+const lastSiteConfigByLocale: Partial<Record<'es' | 'en', SiteConfig>> = {}
+/** Lecturas Payload (testimonios, etc.). */
+export const PAYLOAD_READ_TIMEOUT_MS = isProd ? 25000 : 12000
 
 /**
  * Si Payload/SQLite se bloquea (p. ej. otro proceso con la BD abierta en Windows),
@@ -40,7 +42,7 @@ export async function runWithTimeout<T>(promise: Promise<T>, ms: number, label: 
   })
 }
 
-export const getSiteConfig = cache(async (locale: 'es' | 'en') => {
+export const getSiteConfig = cache(async (locale: 'es' | 'en'): Promise<SiteConfig | null> => {
   try {
     const doc = await runWithTimeout(
       (async () => {
@@ -48,18 +50,23 @@ export const getSiteConfig = cache(async (locale: 'es' | 'en') => {
         return await payload.findGlobal({
           slug: 'site-config',
           locale,
+          fallbackLocale: 'es',
           depth: 1,
         })
       })(),
       SITE_CONFIG_TIMEOUT_MS,
       `[getSiteConfig:${locale}]`,
     )
-    return doc
+    if (doc) {
+      lastSiteConfigByLocale[locale] = doc
+      return doc
+    }
+    return lastSiteConfigByLocale[locale] ?? null
   } catch (e) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('[getSiteConfig] usando fallback (null):', e)
+      console.warn('[getSiteConfig] error, usando null:', e)
     }
-    return null
+    return lastSiteConfigByLocale[locale] ?? null
   }
 })
 
@@ -67,18 +74,34 @@ export function defaultWhatsapp(): string {
   return process.env.NEXT_PUBLIC_WHATSAPP || '18095551234'
 }
 
+/** Extrae texto para el locale activo; admite `string` o forma localizada `{ es?, en? }` (Payload). */
+function extractLocalizedString(value: unknown, locale: 'es' | 'en'): string {
+  if (value == null) return ''
+  if (typeof value === 'string') return value.trim()
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    const o = value as Record<string, unknown>
+    const es = typeof o.es === 'string' ? o.es.trim() : ''
+    const en = typeof o.en === 'string' ? o.en.trim() : ''
+    if (locale === 'es') return es || en
+    return en || es
+  }
+  return ''
+}
+
 /**
  * Payload guarda campos `localized` por idioma. Si solo rellenaste ES y visitas /en,
  * el valor en EN viene vacío: usa el otro idioma antes que el texto fijo del código.
+ * Si la API devuelve el bloque `{ es, en }` en lugar de un string plano, también se resuelve.
  */
 export function pickLocalizedString(
   valueCurrent: unknown,
   valueAlternate: unknown,
+  locale: 'es' | 'en',
   fallback: string,
 ): string {
-  const cur = typeof valueCurrent === 'string' ? valueCurrent.trim() : ''
+  const cur = extractLocalizedString(valueCurrent, locale)
   if (cur) return cur
-  const alt = typeof valueAlternate === 'string' ? valueAlternate.trim() : ''
+  const alt = extractLocalizedString(valueAlternate, locale)
   if (alt) return alt
   return fallback
 }

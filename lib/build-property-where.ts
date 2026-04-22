@@ -1,6 +1,7 @@
 import type { Payload } from 'payload'
 import type { Where } from 'payload'
 
+import { propertyPublishedWhere } from '@/lib/property-published-where'
 import { getProvincesForRegion } from '@/lib/rd-regions'
 
 export type PropertyListFilters = {
@@ -17,7 +18,7 @@ export async function buildPropertyWhere(
   payload: Payload,
   f: PropertyListFilters,
 ): Promise<Where> {
-  const and: Where[] = [{ published: { equals: true } }]
+  const and: Where[] = [propertyPublishedWhere]
 
   if (f.filterHouseTypeSlug) {
     const ht = await payload.find({

@@ -103,6 +103,15 @@ export const Users: CollectionConfig = {
           ...(originalDoc as object as User),
           ...data,
         }
+        const isFirstUserBootstrap = operation === 'create' && !req.user
+
+        // Flujo nativo de Payload: creación del primer usuario sin sesión activa.
+        // Debe poder completarse aunque la UI no envíe todos los campos custom.
+        if (isFirstUserBootstrap) {
+          merged.accountKind = 'internal'
+          merged.isStaff = true
+          merged.isAdmin = true
+        }
 
         if (merged.accountKind === 'client') {
           merged.isStaff = false

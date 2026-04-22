@@ -100,7 +100,7 @@ export function PropertyFilters({
           allMuni: 'Todos',
           any: 'Cualquiera',
           clear: 'Limpiar filtros',
-          tagGroups: { general: 'General', style: 'Estilo', location: 'Ubicación' },
+          tagGroups: { general: 'General', style: 'Estilo' },
         }
       : {
           region: 'Region',
@@ -114,18 +114,16 @@ export function PropertyFilters({
           allMuni: 'All',
           any: 'Any',
           clear: 'Clear filters',
-          tagGroups: { general: 'General', style: 'Style', location: 'Location' },
+          tagGroups: { general: 'General', style: 'Style' },
         }
 
   const tagsByCat = useMemo(() => {
-    const g: Record<'general' | 'style' | 'location', typeof tagOptions> = {
+    const g: Record<'general' | 'style', typeof tagOptions> = {
       general: [],
       style: [],
-      location: [],
     }
     for (const row of tagOptions) {
-      const c: 'general' | 'style' | 'location' =
-        row.category === 'style' || row.category === 'location' ? row.category : 'general'
+      const c: 'general' | 'style' = row.category === 'style' ? 'style' : 'general'
       g[c].push(row)
     }
     return g
@@ -291,7 +289,7 @@ export function PropertyFilters({
       <div className="mt-8">
         <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t.tags}</Label>
         <div className="mt-3 max-h-56 space-y-4 overflow-y-auto rounded-xl border border-seed-forest/10 bg-background/50 p-4">
-          {(['general', 'style', 'location'] as const).map((cat) => {
+          {(['general', 'style'] as const).map((cat) => {
             const list = tagsByCat[cat]
             if (!list?.length) return null
             return (

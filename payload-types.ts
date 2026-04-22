@@ -542,6 +542,9 @@ export interface Property {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Si está desmarcado, la propiedad no aparece en /hogar ni en la ficha pública. Guarda el documento tras cambiarlo.
+   */
   published?: boolean | null;
   meta?: {
     title?: string | null;

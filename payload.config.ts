@@ -112,6 +112,10 @@ export default buildConfig({
   }),
   sharp,
   onInit: async (payload) => {
+    /** Evita doble seed si ejecutas `scripts/run-seed-service-packages.ts` (misma condición de carrera en SQLite). */
+    if (process.env.PAYLOAD_SKIP_AUTO_SEED === 'true') {
+      return
+    }
     /** No bloquear el primer request: el seed ya es idempotente y rápido si la BD está poblada. */
     queueMicrotask(() => {
       void seedPropertyTaxonomies(payload).catch((err: unknown) => {

@@ -5,13 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --webpack",
+    "dev:clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
     "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "generate:importmap": "payload generate:importmap",
     "payload": "payload",
-    "db:reset": "node scripts/reset-payload-db.mjs"
+    "db:reset": "node scripts/reset-payload-db.mjs",
+    "housing:scrape": "npx --prefix tools/housing-scraper tsx tools/housing-scraper/src/cli.ts",
+    "housing:photos": "npx --prefix tools/housing-scraper tsx tools/housing-scraper/src/cli.ts --photos --out-dir ./housing-export -n 12 --pages 2 -r punta-cana -k sale"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.0",

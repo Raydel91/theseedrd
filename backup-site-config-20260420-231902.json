@@ -1,0 +1,56 @@
+{
+  "site_config": {
+    "columns": [
+      "id",
+      "whatsapp_phone",
+      "contact_email",
+      "map_embed_url",
+      "updated_at",
+      "created_at",
+      "rnc",
+      "instagram_url",
+      "facebook_url"
+    ],
+    "rows": [
+      [
+        1,
+        "18495313143",
+        "theseedrd@gmail.com",
+        null,
+        "2026-04-20T23:44:23.824Z",
+        "2026-04-20T02:43:21.958Z",
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  "site_config_locales": {
+    "columns": [
+      "address_line",
+      "hero_title",
+      "hero_subtitle",
+      "welcome_text",
+      "meta_title",
+      "meta_description",
+      "meta_image_id",
+      "id",
+      "_locale",
+      "_parent_id"
+    ],
+    "rows": [
+      [
+        "Serena Village, edif. H1 apto. 201, Bávaro, Punta Cana, La Altagracia, CP 23000, República Dominicana",
+        "Planta tu semilla en República Dominicana",
+        "Tu camino completo y sin estrés hacia la residencia legal y tu nuevo hogar en el paraíso caribeño. Migración, reubicación y bienes raíces, todo en un solo lugar.",
+        "+87 familias ya están viviendo su sueño dominicano con The Seed RD.",
+        null,
+        null,
+        null,
+        1,
+        "es",
+        1
+      ]
+    ]
+  }
+}

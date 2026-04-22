@@ -1,6 +1,6 @@
 import { HeroHome } from '@/components/sections/hero-home'
 import { TestimonialCarousel, type TestimonialItem } from '@/components/sections/testimonial-carousel'
-import { buttonVariants } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button-variants'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { Locale } from '@/lib/i18n/copy'
 import type { Testimonial } from '@/payload-types'
@@ -24,9 +24,8 @@ const blurbs = {
 } as const
 
 export async function HomeContent({ locale }: { locale: Locale }) {
-  const [siteEs, siteEn, testimonialsResult] = await Promise.all([
-    getSiteConfig('es'),
-    getSiteConfig('en'),
+  const [site, testimonialsResult] = await Promise.all([
+    getSiteConfig(locale),
     (async () => {
       try {
         const found = await runWithTimeout(
@@ -54,9 +53,6 @@ export async function HomeContent({ locale }: { locale: Locale }) {
     })(),
   ])
 
-  const site = locale === 'es' ? siteEs : siteEn
-  const siteAlt = locale === 'es' ? siteEn : siteEs
-
   const testimonials = testimonialsResult
 
   const items: TestimonialItem[] = testimonials.docs.map((doc: Testimonial) => {
@@ -77,14 +73,16 @@ export async function HomeContent({ locale }: { locale: Locale }) {
 
   const title = pickLocalizedString(
     site?.heroTitle,
-    siteAlt?.heroTitle,
+    null,
+    locale,
     locale === 'es'
       ? 'Tu nuevo comienzo en el Caribe, con confianza absoluta'
       : 'Your new beginning in the Caribbean, with absolute confidence',
   )
   const subtitle = pickLocalizedString(
     site?.heroSubtitle,
-    siteAlt?.heroSubtitle,
+    null,
+    locale,
     locale === 'es'
       ? 'Legal, vivienda y lifestyle — un equipo boutique para familias y profesionales en República Dominicana.'
       : 'Legal, home, and lifestyle — a boutique team for families and professionals in the Dominican Republic.',

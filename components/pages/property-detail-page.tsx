@@ -4,11 +4,12 @@ import { notFound } from 'next/navigation'
 import { PropertyGallery } from '@/components/site/property-gallery'
 import { Badge } from '@/components/ui/badge'
 import { googleMapsEmbedFromAddress } from '@/lib/maps-embed'
-import { pickLocale } from '@/lib/pick-locale'
+import { pickLocaleWithFallback } from '@/lib/pick-locale'
 import { getRDDivisionLabels } from '@/lib/rd-admin-divisions'
 import { absoluteMediaUrl } from '@/lib/media-url'
 import type { Locale } from '@/lib/i18n/copy'
 import { routeMap } from '@/lib/i18n/routes'
+import { propertyPublishedWhere } from '@/lib/property-published-where'
 import { getPayloadInstance } from '@/lib/payload-server'
 
 const copy = {
@@ -41,9 +42,13 @@ const copy = {
 function labelFromRelation(doc: unknown, locale: Locale): string | null {
   if (!doc || typeof doc !== 'object') return null
   const raw = (doc as { label?: string | { es?: string; en?: string } | null }).label
-  if (typeof raw === 'string') return raw.trim() || null
+  if (typeof raw === 'string') {
+    const s = raw.trim()
+    return s || null
+  }
   if (raw && typeof raw === 'object') {
-    return pickLocale(raw as { es?: string; en?: string }, locale) || null
+    const s = pickLocaleWithFallback(raw as { es?: string; en?: string }, locale)
+    return s || null
   }
   return null
 }
@@ -52,9 +57,10 @@ export async function PropertyDetailPage({ locale, slug }: { locale: Locale; slu
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'properties',
-    where: { and: [{ slug: { equals: slug } }, { published: { equals: true } }] },
+    where: { and: [{ slug: { equals: slug } }, propertyPublishedWhere] },
     depth: 2,
     locale,
+    fallbackLocale: 'es',
     limit: 1,
   })
   const prop = res.docs[0]
@@ -63,9 +69,12 @@ export async function PropertyDetailPage({ locale, slug }: { locale: Locale; slu
   const t = copy[locale]
   const r = routeMap[locale]
 
-  const title = pickLocale(prop.title as string | { es?: string; en?: string }, locale)
-  const zone = pickLocale(prop.location as string | { es?: string; en?: string }, locale)
-  const street = pickLocale(prop.streetAddress as string | { es?: string; en?: string } | null | undefined, locale)
+  const title = pickLocaleWithFallback(prop.title as string | { es?: string; en?: string }, locale)
+  const zone = pickLocaleWithFallback(prop.location as string | { es?: string; en?: string }, locale)
+  const street = pickLocaleWithFallback(
+    prop.streetAddress as string | { es?: string; en?: string } | null | undefined,
+    locale,
+  )
 
   const rd = prop.rdDivision as string | null | undefined
   const geo = getRDDivisionLabels(rd ?? null, locale === 'es' ? 'es' : 'en')

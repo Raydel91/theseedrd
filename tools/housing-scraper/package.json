@@ -1,0 +1,21 @@
+{
+  "name": "dr-housing-scraper",
+  "private": true,
+  "type": "module",
+  "description": "CLI para recopilar listados de vivienda (RD: Punta Cana, Santo Domingo). Uso responsable: revisa robots.txt y términos del sitio.",
+  "scripts": {
+    "scrape": "tsx src/cli.ts",
+    "scrape:photos": "tsx src/cli.ts --photos --out-dir ./housing-export -n 12 --pages 2 -r punta-cana -k sale",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "commander": "^12.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0"
+  }
+}

@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import { PropertiesPage } from '@/components/pages/properties-page'
 import { publicPageMetadataWithOg } from '@/lib/seo/public-metadata'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata(): Promise<Metadata> {
   return publicPageMetadataWithOg('es', 'homes', {
     title: 'Hogar e inversión inmobiliaria premium | The Seed RD',

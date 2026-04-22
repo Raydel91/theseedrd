@@ -141,6 +141,10 @@ export const Properties: CollectionConfig = {
       type: 'checkbox',
       defaultValue: true,
       label: 'Publicado',
+      admin: {
+        description:
+          'Si está desmarcado, la propiedad no aparece en /hogar ni en la ficha pública. Guarda el documento tras cambiarlo.',
+      },
     },
   ],
 }

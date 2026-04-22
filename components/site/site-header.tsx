@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 import { MOBILE_NAV_TOGGLE_ID } from '@/components/site/mobile-nav-toggle-id'
-import { buttonVariants } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button-variants'
 import type { Locale } from '@/lib/i18n/copy'
 import { copy } from '@/lib/i18n/copy'
 import { routeMap, translatePath } from '@/lib/i18n/routes'

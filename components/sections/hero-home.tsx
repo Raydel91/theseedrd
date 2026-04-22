@@ -7,7 +7,7 @@ import { useRef } from 'react'
 
 import { Award, Compass, ShieldCheck } from 'lucide-react'
 
-import { buttonVariants } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button-variants'
 import type { Locale } from '@/lib/i18n/copy'
 import { copy } from '@/lib/i18n/copy'
 import { routeMap } from '@/lib/i18n/routes'

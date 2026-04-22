@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { buildPropertyWhere } from '@/lib/build-property-where'
 import type { Locale } from '@/lib/i18n/copy'
 import { routeMap } from '@/lib/i18n/routes'
-import { pickLocale } from '@/lib/pick-locale'
+import { pickLocaleWithFallback } from '@/lib/pick-locale'
 import { getRDDivisionLabels } from '@/lib/rd-admin-divisions'
 import { absoluteMediaUrl } from '@/lib/media-url'
 import { getPayloadInstance } from '@/lib/payload-server'
@@ -18,20 +18,45 @@ const copy = {
     title: 'Hogar',
     intro: 'Propiedades curadas en destinos premium de República Dominicana.',
     empty: 'No hay propiedades con estos filtros.',
+    emptyAdmin:
+      'Si acabas de crear una, abre su ficha en el admin y confirma que «Publicado» esté marcado y guardada.',
+    emptyFilters:
+      'Tienes filtros en la URL; una propiedad nueva puede quedar fuera. Prueba sin filtros:',
+    emptyClear: 'Ver todas',
   },
   en: {
     title: 'Homes',
     intro: 'Curated properties in premium destinations across the Dominican Republic.',
     empty: 'No properties match these filters.',
+    emptyAdmin:
+      'If you just created one, open it in the admin and confirm «Publicado» is checked and saved.',
+    emptyFilters: 'URL filters can hide a new listing. Try without filters:',
+    emptyClear: 'View all',
   },
 } as const
+
+function hasActiveListingFilters(s: PropertiesListingSearch): boolean {
+  return Boolean(
+    s.provincia ||
+      s.municipio ||
+      s.region ||
+      s.tipo ||
+      s.cuartos ||
+      s.banos ||
+      s.etiquetas,
+  )
+}
 
 function labelFromDoc(doc: unknown, locale: Locale): string | null {
   if (!doc || typeof doc !== 'object') return null
   const raw = (doc as { label?: string | { es?: string; en?: string } | null }).label
-  if (typeof raw === 'string') return raw.trim() || null
+  if (typeof raw === 'string') {
+    const s = raw.trim()
+    return s || null
+  }
   if (raw && typeof raw === 'object') {
-    return pickLocale(raw as { es?: string; en?: string }, locale) || null
+    const s = pickLocaleWithFallback(raw as { es?: string; en?: string }, locale)
+    return s || null
   }
   return null
 }
@@ -80,6 +105,7 @@ export async function PropertiesPage({
       where,
       depth: 2,
       locale,
+      fallbackLocale: 'es',
       limit: 48,
       sort: '-createdAt',
     }),
@@ -87,29 +113,34 @@ export async function PropertiesPage({
       collection: 'house-types',
       sort: 'sortOrder',
       locale,
+      fallbackLocale: 'es',
       limit: 200,
     }),
     payload.find({
       collection: 'property-tags',
       sort: 'sortOrder',
       locale,
+      fallbackLocale: 'es',
       limit: 500,
     }),
   ])
 
   const t = copy[locale]
   const r = routeMap[locale]
+  const filtersActive = hasActiveListingFilters(search)
 
   const houseTypeOptions = houseTypes.docs.map((d) => ({
     slug: d.slug as string,
     label: labelFromDoc(d as { label?: unknown }, locale) ?? (d.slug as string),
   }))
 
-  const tagOptions = propertyTags.docs.map((d) => ({
-    slug: d.slug as string,
-    label: labelFromDoc(d as { label?: unknown }, locale) ?? (d.slug as string),
-    category: (d.tagCategory as string) || 'general',
-  }))
+  const tagOptions = propertyTags.docs
+    .filter((d) => (d.tagCategory as string) !== 'location')
+    .map((d) => ({
+      slug: d.slug as string,
+      label: labelFromDoc(d as { label?: unknown }, locale) ?? (d.slug as string),
+      category: (d.tagCategory as string) || 'general',
+    }))
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -125,12 +156,23 @@ export async function PropertiesPage({
       </Suspense>
 
       {res.docs.length === 0 ? (
-        <p className="mt-10 text-muted-foreground">{t.empty}</p>
+        <div className="mt-10 space-y-3">
+          <p className="text-muted-foreground">{t.empty}</p>
+          <p className="max-w-xl text-sm text-muted-foreground">{t.emptyAdmin}</p>
+          {filtersActive ? (
+            <p className="max-w-xl text-sm text-muted-foreground">
+              {t.emptyFilters}{' '}
+              <Link href={r.homes} className="font-medium text-seed-emerald underline underline-offset-4">
+                {t.emptyClear}
+              </Link>
+            </p>
+          ) : null}
+        </div>
       ) : (
         <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {res.docs.map((prop) => {
-            const title = pickLocale(prop.title as string | { es?: string; en?: string }, locale)
-            const zone = pickLocale(prop.location as string | { es?: string; en?: string }, locale)
+            const title = pickLocaleWithFallback(prop.title as string | { es?: string; en?: string }, locale)
+            const zone = pickLocaleWithFallback(prop.location as string | { es?: string; en?: string }, locale)
             const slug = prop.slug as string
             const rd = prop.rdDivision as string | null | undefined
             const geo = getRDDivisionLabels(rd ?? null, locale === 'es' ? 'es' : 'en')

@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "dr-housing-scraper": "file:../.."
+  }
+}

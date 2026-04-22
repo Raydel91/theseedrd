@@ -40,6 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# export scraper vivienda (fotos + JSON)
+/housing-export/
+
 # Payload CMS (SQLite local + uploads)
 /payload.db
 /payload.db-*

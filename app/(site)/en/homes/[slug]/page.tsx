@@ -3,7 +3,10 @@ import type { Metadata } from 'next'
 import { PropertyDetailPage } from '@/components/pages/property-detail-page'
 import { pickLocale } from '@/lib/pick-locale'
 import { absoluteMediaUrl } from '@/lib/media-url'
+import { propertyPublishedWhere } from '@/lib/property-published-where'
 import { getPayloadInstance } from '@/lib/payload-server'
+
+export const dynamic = 'force-dynamic'
 
 const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
@@ -16,7 +19,7 @@ export async function generateMetadata({
   const payload = await getPayloadInstance()
   const res = await payload.find({
     collection: 'properties',
-    where: { and: [{ slug: { equals: slug } }, { published: { equals: true } }] },
+    where: { and: [{ slug: { equals: slug } }, propertyPublishedWhere] },
     depth: 1,
     locale: 'en',
     limit: 1,

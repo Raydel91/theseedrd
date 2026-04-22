@@ -165,11 +165,28 @@ async function upsertPackage(payload: Payload, p: SeedPackage): Promise<void> {
     highlighted: p.highlighted,
   }
   const featuresEs = p.features.map((f) => ({ item: f.es }))
-  const featuresEn = p.features.map((f) => ({ item: f.en }))
+
+  /**
+   * Un `update` con `locale: 'en'` que reemplaza `features` sin `id` borra las filas
+   * anteriores y solo queda el texto en inglés en `packages_features_locales`.
+   * Hay que reutilizar los `id` de cada fila del array al escribir `en`.
+   * Además, Payload exige `item` en inglés al guardar con locale `en` (no basta con
+   * actualizar solo título/descripción).
+   */
+  const featuresEnWithRowIds = (
+    rows: { id?: string | number | null }[] | null | undefined,
+  ) =>
+    p.features.map((f, i) => {
+      const rid = rows?.[i]?.id
+      return {
+        id: rid != null ? String(rid) : undefined,
+        item: f.en,
+      }
+    })
 
   if (found.docs[0]) {
     const id = found.docs[0].id
-    await payload.update({
+    const afterEs = await payload.update({
       collection: 'packages',
       id,
       locale: 'es',
@@ -193,7 +210,7 @@ async function upsertPackage(payload: Payload, p: SeedPackage): Promise<void> {
         shortDescription: p.shortDescription.en,
         billingNote: p.billingNote.en,
         ctaLabel: p.ctaLabel.en,
-        features: featuresEn,
+        features: featuresEnWithRowIds(afterEs.features as { id?: string | number | null }[]),
       },
     })
     return
@@ -222,7 +239,7 @@ async function upsertPackage(payload: Payload, p: SeedPackage): Promise<void> {
       shortDescription: p.shortDescription.en,
       billingNote: p.billingNote.en,
       ctaLabel: p.ctaLabel.en,
-      features: featuresEn,
+      features: featuresEnWithRowIds(created.features as { id?: string | number | null }[]),
     },
   })
 }
