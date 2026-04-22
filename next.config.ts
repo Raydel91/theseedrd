@@ -16,6 +16,9 @@ const contentSecurityPolicy = [
   "font-src 'self' data: https://fonts.gstatic.com",
   /** Payload admin + uploads (Vercel Blob) + Supabase si algún cliente los usa. */
   "connect-src 'self' https://vitals.vercel-insights.com https://*.vercel-insights.com https://*.blob.vercel-storage.com https://*.public.blob.vercel-storage.com https://*.supabase.co wss://*.supabase.co",
+  /** Lexical / workers en algunos builds */
+  "worker-src 'self' blob:",
+  "media-src 'self' blob: https:",
   /** Mapas embebidos (footer, ficha de propiedad) */
   "frame-src 'self' https://maps.google.com https://www.google.com",
   "frame-ancestors 'self'",

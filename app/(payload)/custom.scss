@@ -1,7 +1,9 @@
-/* Admin UI — alineado con The Seed RD (bosque + turquesa) */
+/* Admin UI — alineado con The Seed RD (bosque + turquesa), solo en tema oscuro.
+ * Nunca usar :root para tokens de tema: con `data-theme="light"` Payload espera
+ * sus variables claras; mezclar variables oscuras en :root deja texto/UI ilegible. */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap');
 
-:root {
+html[data-theme='dark'] {
   --theme-bg: #0a1f1a;
   --theme-elevation-0: #0a3d2f;
   --theme-elevation-50: #0f6b4f;
@@ -10,108 +12,108 @@
   --theme-border-color: rgba(245, 240, 232, 0.12);
   --font-body: 'Inter', system-ui, sans-serif;
   --font-heading: 'Playfair Display', Georgia, serif;
-}
 
-.template-default,
-.app-header,
-.nav {
-  font-family: var(--font-body);
-}
+  .template-default,
+  .app-header,
+  .nav {
+    font-family: var(--font-body);
+  }
 
-h1,
-h2,
-h3,
-h4,
-.app-header__label {
-  font-family: var(--font-heading);
-  letter-spacing: 0.02em;
-}
+  h1,
+  h2,
+  h3,
+  h4,
+  .app-header__label {
+    font-family: var(--font-heading);
+    letter-spacing: 0.02em;
+  }
 
-.btn--style-primary,
-.submit-field button[type='submit'] {
-  background: linear-gradient(135deg, #0f6b4f 0%, #00bfa5 100%) !important;
-  border: none !important;
-  box-shadow: 0 8px 24px rgba(0, 191, 165, 0.25);
-}
+  .btn--style-primary,
+  .submit-field button[type='submit'] {
+    background: linear-gradient(135deg, #0f6b4f 0%, #00bfa5 100%) !important;
+    border: none !important;
+    box-shadow: 0 8px 24px rgba(0, 191, 165, 0.25);
+  }
 
-/* Campos de formulario: texto legible sobre fondo oscuro del admin */
-.template-default input:not([type='checkbox']):not([type='radio']):not([type='range']),
-.template-default textarea,
-.template-default select,
-.template-default [class*='input'] input,
-.template-default .field-type .input-field,
-.template-default .field-type .input-field input {
-  background-color: #f5f0e8 !important;
-  color: #0a1f1a !important;
-  border: 1px solid rgba(10, 31, 26, 0.22) !important;
-}
+  /* Campos de formulario: texto legible sobre fondo oscuro del admin */
+  .template-default input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  .template-default textarea,
+  .template-default select,
+  .template-default [class*='input'] input,
+  .template-default .field-type .input-field,
+  .template-default .field-type .input-field input {
+    background-color: #f5f0e8 !important;
+    color: #0a1f1a !important;
+    border: 1px solid rgba(10, 31, 26, 0.22) !important;
+  }
 
-.template-default input::placeholder,
-.template-default textarea::placeholder {
-  color: rgba(10, 31, 26, 0.45) !important;
-}
+  .template-default input::placeholder,
+  .template-default textarea::placeholder {
+    color: rgba(10, 31, 26, 0.45) !important;
+  }
 
-.template-default .field-type .label-field,
-.template-default label.field-label {
-  color: #f5f0e8 !important;
-}
+  .template-default .field-type .label-field,
+  .template-default label.field-label {
+    color: #f5f0e8 !important;
+  }
 
-.template-default .field-description,
-.template-default .field-description * {
-  color: rgba(245, 240, 232, 0.78) !important;
-}
+  .template-default .field-description,
+  .template-default .field-description * {
+    color: rgba(245, 240, 232, 0.78) !important;
+  }
 
-/* Texto dentro de selects/autocomplete/relationship chips */
-.template-default [class*='select'] [class*='value'],
-.template-default [class*='select'] [class*='option'],
-.template-default [class*='react-select'] [class*='singleValue'],
-.template-default [class*='react-select'] [class*='option'],
-.template-default [class*='relationship'] [class*='value'],
-.template-default [class*='relationship'] [class*='pill'],
-.template-default [class*='chip'],
-.template-default [class*='tag'] {
-  color: #0a1f1a !important;
-}
+  /* Texto dentro de selects/autocomplete/relationship chips */
+  .template-default [class*='select'] [class*='value'],
+  .template-default [class*='select'] [class*='option'],
+  .template-default [class*='react-select'] [class*='singleValue'],
+  .template-default [class*='react-select'] [class*='option'],
+  .template-default [class*='relationship'] [class*='value'],
+  .template-default [class*='relationship'] [class*='pill'],
+  .template-default [class*='chip'],
+  .template-default [class*='tag'] {
+    color: #0a1f1a !important;
+  }
 
-/* Fondos claros para dropdowns/listas emergentes del admin */
-.template-default [class*='select'] [class*='control'],
-.template-default [class*='react-select'] [class*='control'],
-.template-default [class*='relationship'] [class*='control'],
-.template-default [role='combobox'] {
-  background-color: #f5f0e8 !important;
-  color: #0a1f1a !important;
-  border: 1px solid rgba(10, 31, 26, 0.22) !important;
-}
+  /* Fondos claros para dropdowns/listas emergentes del admin */
+  .template-default [class*='select'] [class*='control'],
+  .template-default [class*='react-select'] [class*='control'],
+  .template-default [class*='relationship'] [class*='control'],
+  .template-default [role='combobox'] {
+    background-color: #f5f0e8 !important;
+    color: #0a1f1a !important;
+    border: 1px solid rgba(10, 31, 26, 0.22) !important;
+  }
 
-.template-default [class*='menu'],
-.template-default [class*='dropdown'],
-.template-default [class*='popover'],
-.template-default [role='listbox'] {
-  background-color: #f5f0e8 !important;
-  color: #0a1f1a !important;
-}
+  .template-default [class*='menu'],
+  .template-default [class*='dropdown'],
+  .template-default [class*='popover'],
+  .template-default [role='listbox'] {
+    background-color: #f5f0e8 !important;
+    color: #0a1f1a !important;
+  }
 
-/* Rich text / lexical: evitar texto invisible en editor */
-.template-default [contenteditable='true'],
-.template-default .lexical-editor,
-.template-default .rich-text [class*='editor'] {
-  background-color: #f5f0e8 !important;
-  color: #0a1f1a !important;
-}
+  /* Rich text / lexical: evitar texto invisible en editor */
+  .template-default [contenteditable='true'],
+  .template-default .lexical-editor,
+  .template-default .rich-text [class*='editor'] {
+    background-color: #f5f0e8 !important;
+    color: #0a1f1a !important;
+  }
 
-/* Texto en celdas de tabla/listados */
-.template-default table td,
-.template-default table th,
-.template-default [class*='cell'],
-.template-default [class*='row'] [class*='label'] {
-  color: #f5f0e8 !important;
-}
+  /* Texto en celdas de tabla/listados */
+  .template-default table td,
+  .template-default table th,
+  .template-default [class*='cell'],
+  .template-default [class*='row'] [class*='label'] {
+    color: #f5f0e8 !important;
+  }
 
-/* Botón Cerrar sesión: contraste alto y legible */
-.template-default [href*='/admin/logout'],
-.template-default button[aria-label*='Logout'],
-.template-default button[aria-label*='Cerrar'],
-.template-default [class*='log-out'],
-.template-default [class*='logout'] {
-  color: #f5f0e8 !important;
+  /* Botón Cerrar sesión: contraste alto y legible */
+  .template-default [href*='/admin/logout'],
+  .template-default button[aria-label*='Logout'],
+  .template-default button[aria-label*='Cerrar'],
+  .template-default [class*='log-out'],
+  .template-default [class*='logout'] {
+    color: #f5f0e8 !important;
+  }
 }

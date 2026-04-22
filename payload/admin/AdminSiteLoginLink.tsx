@@ -1,11 +1,9 @@
 'use client'
 
-import Link from 'next/link'
-
-/** Enlace al login del portal (NextAuth), visible en el panel Payload. */
+/** `<a>` en lugar de `next/link`: el admin de Payload no debe depender del router de Next. */
 export function AdminSiteLoginLink() {
   return (
-    <Link
+    <a
       href="/logout"
       className="nav__link"
       style={{
@@ -23,6 +21,6 @@ export function AdminSiteLoginLink() {
       }}
     >
       Cerrar sesión e ir a login
-    </Link>
+    </a>
   )
 }
