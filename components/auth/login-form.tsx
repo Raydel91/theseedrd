@@ -103,7 +103,26 @@ export function LoginForm({
             </Link>
           </div>
         </form>
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <p className="mt-5 border-t border-border pt-5 text-center text-xs leading-relaxed text-muted-foreground">
+          {locale === 'es' ? (
+            <>
+              ¿Equipo o primer alta del sitio? El administrador inicial se crea en el{' '}
+              <Link href="/admin" className="font-medium text-seed-emerald underline underline-offset-2">
+                panel Payload (CMS)
+              </Link>
+              , no en este portal de clientes.
+            </>
+          ) : (
+            <>
+              Team or first-time setup? Create the initial admin in the{' '}
+              <Link href="/admin" className="font-medium text-seed-emerald underline underline-offset-2">
+                Payload admin panel
+              </Link>
+              , not in this client portal.
+            </>
+          )}
+        </p>
+        <p className="mt-4 text-center text-sm text-muted-foreground">
           <Link href={r.home} className="underline">
             {locale === 'es' ? 'Volver al sitio' : 'Back to website'}
           </Link>
