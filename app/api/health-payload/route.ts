@@ -63,8 +63,9 @@ function classifyDbError(msg: string, code?: string): string {
 }
 
 function errorMeta(e: unknown): { errorType: string; messagePreview: string | null } {
+  /** En builds minificados `constructor.name` puede ser una sola letra; usamos `name` o "Error". */
   const errorType =
-    e instanceof Error ? e.constructor.name : e === null ? 'null' : typeof e
+    e instanceof Error ? (typeof e.name === 'string' && e.name.length >= 2 ? e.name : 'Error') : e === null ? 'null' : typeof e
   const show =
     process.env.PAYLOAD_PUBLIC_HEALTH_DETAILS === 'true' &&
     e instanceof Error &&
