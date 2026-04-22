@@ -28,6 +28,7 @@ import { AdminRegistry } from './payload/globals/AdminRegistry'
 import { SiteConfig } from './payload/globals/SiteConfig'
 import { ReferralSettings } from './payload/globals/ReferralSettings'
 import { normalizePostgresConnectionString } from './lib/postgres-connection'
+import { isValidVercelBlobReadWriteToken } from './lib/vercel-blob-token'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -45,8 +46,10 @@ export default buildConfig({
   hooks: {
     afterError: [
       ({ error }) => {
+        const err = error instanceof Error ? error : new Error(String(error))
+        console.error('[payload:error]', err.message)
+        if (err.stack) console.error(err.stack)
         if (process.env.NODE_ENV === 'production') {
-          console.error('[payload:error]', error.message)
           return {
             response: {
               message: 'Ha ocurrido un error. Inténtalo de nuevo más tarde.',
@@ -111,10 +114,11 @@ export default buildConfig({
         push: true,
         pool: {
           connectionString: postgresConnectionString,
-          /** Vercel serverless: pocas conexiones por instancia para no saturar el pooler. */
-          max: process.env.VERCEL ? 3 : 10,
+          /** Vercel: 1 conexión por instancia reduce presión sobre el pooler de Supabase. */
+          max: process.env.VERCEL ? 1 : 10,
           connectionTimeoutMillis: 20000,
           idleTimeoutMillis: 20000,
+          application_name: 'the-seed-rd-payload',
         },
       })
     : sqliteAdapter({
@@ -149,12 +153,16 @@ export default buildConfig({
     })
   },
   plugins: [
-    vercelBlobStorage({
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-      collections: {
-        media: true,
-      },
-    }),
+    ...(isValidVercelBlobReadWriteToken(process.env.BLOB_READ_WRITE_TOKEN)
+      ? [
+          vercelBlobStorage({
+            token: process.env.BLOB_READ_WRITE_TOKEN,
+            collections: {
+              media: true,
+            },
+          }),
+        ]
+      : []),
     seoPlugin({
       collections: ['packages', 'properties', 'blog-posts'],
       globals: ['site-config', 'referral-settings'],

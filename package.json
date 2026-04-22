@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "generate:importmap": "payload generate:importmap",
+    "migrate:create": "payload migrate:create",
     "payload": "payload",
     "db:reset": "node scripts/reset-payload-db.mjs",
     "housing:scrape": "npx --prefix tools/housing-scraper tsx tools/housing-scraper/src/cli.ts",
