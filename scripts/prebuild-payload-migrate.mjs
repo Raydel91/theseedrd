@@ -1,6 +1,7 @@
 /**
- * Antes de `next build`: en Vercel/CI (o si PAYLOAD_PREBUILD_MIGRATE=true), aplica migraciones
- * pendientes contra Postgres. En local se omite para no exigir Postgres al compilar.
+ * Opcional antes de `next build`: migraciones contra Postgres **directo** (Supabase 5432).
+ * En Vercel, si falta DATABASE_DIRECT_URL, no hace nada aquí; Payload aplicará `prodMigrations`
+ * en el primer arranque (puede ser más lento la primera vez).
  */
 import { spawnSync } from 'node:child_process'
 
@@ -21,16 +22,32 @@ if (!url.startsWith('postgres')) {
 if (!force && !onVercel && !onCi) {
   // eslint-disable-next-line no-console
   console.info(
-    '[prebuild] Saltando `payload migrate` (local). En Vercel/CI se ejecuta solo; forzar: PAYLOAD_PREBUILD_MIGRATE=true',
+    '[prebuild] Saltando migrate (local). Forzar: PAYLOAD_PREBUILD_MIGRATE=true y Postgres accesible.',
   )
   process.exit(0)
 }
 
+const direct =
+  process.env.DATABASE_DIRECT_URL ||
+  process.env.DIRECT_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  ''
+
+if (!direct.startsWith('postgres')) {
+  // eslint-disable-next-line no-console
+  console.info(
+    '[prebuild] Sin DATABASE_DIRECT_URL (o POSTGRES_URL_NON_POOLING): migrate en build omitido; Payload aplicará migraciones al conectar.',
+  )
+  process.exit(0)
+}
+
+const env = { ...process.env, DATABASE_URL: direct }
+
 // eslint-disable-next-line no-console
-console.info('[prebuild] Ejecutando `payload migrate` (Postgres)…')
+console.info('[prebuild] `payload migrate` usando conexión directa (no pooler 6543)…')
 const r = spawnSync('npx', ['payload', 'migrate'], {
   stdio: 'inherit',
-  env: process.env,
+  env,
   shell: true,
 })
 

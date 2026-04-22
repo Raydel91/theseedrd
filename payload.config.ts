@@ -29,6 +29,7 @@ import { SiteConfig } from './payload/globals/SiteConfig'
 import { ReferralSettings } from './payload/globals/ReferralSettings'
 import { normalizePostgresConnectionString } from './lib/postgres-connection'
 import { isValidVercelBlobReadWriteToken } from './lib/vercel-blob-token'
+import { migrations as postgresProdMigrations } from './migrations'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -113,6 +114,7 @@ export default buildConfig({
     ? postgresAdapter({
         push: true,
         migrationDir: path.resolve(dirname, 'migrations'),
+        prodMigrations: postgresProdMigrations,
         pool: {
           connectionString: postgresConnectionString,
           /** Vercel: 1 conexión por instancia reduce presión sobre el pooler de Supabase. */
