@@ -10,10 +10,12 @@ const isProd = process.env.NODE_ENV === 'production'
 const contentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
+  /** Admin (`custom.scss`) importa Inter/Playfair desde Google; sin esto la hoja puede fallar y romper hidratación. */
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
-  "font-src 'self' data:",
-  "connect-src 'self' https://vitals.vercel-insights.com https://*.vercel-insights.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  /** Payload admin + uploads (Vercel Blob) + Supabase si algún cliente los usa. */
+  "connect-src 'self' https://vitals.vercel-insights.com https://*.vercel-insights.com https://*.blob.vercel-storage.com https://*.public.blob.vercel-storage.com https://*.supabase.co wss://*.supabase.co",
   /** Mapas embebidos (footer, ficha de propiedad) */
   "frame-src 'self' https://maps.google.com https://www.google.com",
   "frame-ancestors 'self'",
