@@ -33,9 +33,30 @@ import { migrations as postgresProdMigrations } from './migrations'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-const databaseURL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 'file:./payload.db'
-const usePostgres = databaseURL.startsWith('postgres://') || databaseURL.startsWith('postgresql://')
-const postgresConnectionString = usePostgres ? normalizePostgresConnectionString(databaseURL) : databaseURL
+
+/** Pooler (6543 / Prisma) o SQLite por defecto. */
+const pooledDatabaseUrl =
+  process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || 'file:./payload.db'
+
+/** Conexión directa (5432, `db.*.supabase.co`): migraciones DDL y Payload evitan fallos del pooler en transacción. */
+const directDatabaseUrl =
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_DIRECT_URL ||
+  process.env.DIRECT_URL ||
+  ''
+
+const usePostgres =
+  pooledDatabaseUrl.startsWith('postgres://') ||
+  pooledDatabaseUrl.startsWith('postgresql://') ||
+  directDatabaseUrl.startsWith('postgres://') ||
+  directDatabaseUrl.startsWith('postgresql://')
+
+const postgresPoolUrl = directDatabaseUrl.startsWith('postgres') ? directDatabaseUrl : pooledDatabaseUrl
+
+const databaseURL = usePostgres ? postgresPoolUrl : pooledDatabaseUrl
+const postgresConnectionString = usePostgres
+  ? normalizePostgresConnectionString(postgresPoolUrl)
+  : pooledDatabaseUrl
 
 export default buildConfig({
   graphQL: {
