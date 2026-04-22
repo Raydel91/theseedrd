@@ -55,7 +55,26 @@ function classifyDbError(msg: string, code?: string): string {
   ) {
     return 'connection'
   }
+  /** Drizzle/Payload al comprobar migraciones (`migrationTableExists` → `to_regclass`). */
+  if (/failed query|to_regclass|payload_migrations/i.test(m)) {
+    return 'database_query_failed'
+  }
   return 'unknown'
+}
+
+function errorMeta(e: unknown): { errorType: string; messagePreview: string | null } {
+  const errorType =
+    e instanceof Error ? e.constructor.name : e === null ? 'null' : typeof e
+  const show =
+    process.env.PAYLOAD_PUBLIC_HEALTH_DETAILS === 'true' &&
+    e instanceof Error &&
+    e.message
+  const messagePreview = show
+    ? e.message
+        .replace(/postgres(ql)?:\/\/[^\s"'`]+/gi, 'postgres://***')
+        .slice(0, 220)
+    : null
+  return { errorType, messagePreview }
 }
 
 /**
@@ -74,7 +93,13 @@ export async function GET() {
       console.error('[health-payload] query', code, msg)
       if (e instanceof Error && e.stack) console.error(e.stack)
       return NextResponse.json(
-        { ok: false, phase: 'query', hint: classifyDbError(msg, code), pgCode: code ?? null },
+        {
+          ok: false,
+          phase: 'query',
+          hint: classifyDbError(msg, code),
+          pgCode: code ?? null,
+          ...errorMeta(e),
+        },
         { status: 503 },
       )
     }
@@ -84,7 +109,13 @@ export async function GET() {
     console.error('[health-payload] init', code, msg)
     if (e instanceof Error && e.stack) console.error(e.stack)
     return NextResponse.json(
-      { ok: false, phase: 'init', hint: classifyDbError(msg, code), pgCode: code ?? null },
+      {
+        ok: false,
+        phase: 'init',
+        hint: classifyDbError(msg, code),
+        pgCode: code ?? null,
+        ...errorMeta(e),
+      },
       { status: 503 },
     )
   }
