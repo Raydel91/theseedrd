@@ -62,19 +62,23 @@ function classifyDbError(msg: string, code?: string): string {
   return 'unknown'
 }
 
+function redactConnectionStrings(s: string): string {
+  return s.replace(/postgres(ql)?:\/\/[^\s"'`]+/gi, 'postgres://***')
+}
+
+/** Siempre seguro de publicar: primeros caracteres del mensaje, sin URIs de BD. */
+function messageShort(msg: string): string {
+  return redactConnectionStrings(msg).slice(0, 160)
+}
+
 function errorMeta(e: unknown): { errorType: string; messagePreview: string | null } {
-  /** En builds minificados `constructor.name` puede ser una sola letra; usamos `name` o "Error". */
-  const errorType =
-    e instanceof Error ? (typeof e.name === 'string' && e.name.length >= 2 ? e.name : 'Error') : e === null ? 'null' : typeof e
+  /** No usar `constructor.name` ni `name` minificados (producción → "f"). */
+  const errorType = e instanceof Error ? 'Error' : e === null ? 'null' : typeof e
   const show =
     process.env.PAYLOAD_PUBLIC_HEALTH_DETAILS === 'true' &&
     e instanceof Error &&
     e.message
-  const messagePreview = show
-    ? e.message
-        .replace(/postgres(ql)?:\/\/[^\s"'`]+/gi, 'postgres://***')
-        .slice(0, 220)
-    : null
+  const messagePreview = show ? redactConnectionStrings(e.message).slice(0, 220) : null
   return { errorType, messagePreview }
 }
 
@@ -99,6 +103,7 @@ export async function GET() {
           phase: 'query',
           hint: classifyDbError(msg, code),
           pgCode: code ?? null,
+          messageShort: messageShort(msg),
           ...errorMeta(e),
         },
         { status: 503 },
@@ -115,6 +120,7 @@ export async function GET() {
         phase: 'init',
         hint: classifyDbError(msg, code),
         pgCode: code ?? null,
+        messageShort: messageShort(msg),
         ...errorMeta(e),
       },
       { status: 503 },
