@@ -11,6 +11,7 @@ import type { Locale } from '@/lib/i18n/copy'
 import { routeMap } from '@/lib/i18n/routes'
 import { propertyPublishedWhere } from '@/lib/property-published-where'
 import { getPayloadInstance } from '@/lib/payload-server'
+import type { Property } from '@/payload-types'
 
 const copy = {
   es: {
@@ -54,16 +55,21 @@ function labelFromRelation(doc: unknown, locale: Locale): string | null {
 }
 
 export async function PropertyDetailPage({ locale, slug }: { locale: Locale; slug: string }) {
-  const payload = await getPayloadInstance()
-  const res = await payload.find({
-    collection: 'properties',
-    where: { and: [{ slug: { equals: slug } }, propertyPublishedWhere] },
-    depth: 2,
-    locale,
-    fallbackLocale: 'es',
-    limit: 1,
-  })
-  const prop = res.docs[0]
+  let prop: Property | undefined
+  try {
+    const payload = await getPayloadInstance()
+    const res = await payload.find({
+      collection: 'properties',
+      where: { and: [{ slug: { equals: slug } }, propertyPublishedWhere] },
+      depth: 2,
+      locale,
+      fallbackLocale: 'es',
+      limit: 1,
+    })
+    prop = res.docs[0]
+  } catch {
+    notFound()
+  }
   if (!prop) notFound()
 
   const t = copy[locale]

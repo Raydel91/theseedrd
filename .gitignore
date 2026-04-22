@@ -48,5 +48,10 @@ next-env.d.ts
 /payload.db-*
 /media
 
+# copias locales de SQLite
+/backups/
+
 # opcional: tipos generados
 # /payload-types.ts
+
+.vercel

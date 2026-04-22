@@ -2,7 +2,9 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { buildConfig } from 'payload'
 import sharp from 'sharp'
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { sqliteAdapter } from '@payloadcms/db-sqlite'
+import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 
@@ -25,9 +27,13 @@ import { seedServicePackages } from './payload/seed/seed-service-packages'
 import { AdminRegistry } from './payload/globals/AdminRegistry'
 import { SiteConfig } from './payload/globals/SiteConfig'
 import { ReferralSettings } from './payload/globals/ReferralSettings'
+import { normalizePostgresConnectionString } from './lib/postgres-connection'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+const databaseURL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 'file:./payload.db'
+const usePostgres = databaseURL.startsWith('postgres://') || databaseURL.startsWith('postgresql://')
+const postgresConnectionString = usePostgres ? normalizePostgresConnectionString(databaseURL) : databaseURL
 
 export default buildConfig({
   graphQL: {
@@ -98,22 +104,36 @@ export default buildConfig({
     /** Evita que el locale se "bloquee" por herencia automática en el admin. */
     fallback: false,
   },
-  db: sqliteAdapter({
-    client: {
-      url: process.env.DATABASE_URL || 'file:./payload.db',
-    },
-    /** Espera si la BD está bloqueada (dev / Windows). */
-    busyTimeout: 8000,
-    /**
-     * Por defecto el adaptador usa SQLite sin WAL: un solo escritor y lecturas peor concurrentes.
-     * Con varias peticiones RSC + admin, conviene WAL (mejor rendimiento y menos “colas”).
-     */
-    wal: true,
-  }),
+  db: usePostgres
+    ? postgresAdapter({
+        push: true,
+        pool: {
+          connectionString: postgresConnectionString,
+          /** Vercel serverless: pocas conexiones por instancia para no saturar el pooler. */
+          max: process.env.VERCEL ? 3 : 10,
+          connectionTimeoutMillis: 20000,
+          idleTimeoutMillis: 20000,
+        },
+      })
+    : sqliteAdapter({
+        client: {
+          url: databaseURL,
+        },
+        /** Espera si la BD está bloqueada (dev / Windows). */
+        busyTimeout: 8000,
+        /**
+         * Por defecto el adaptador usa SQLite sin WAL: un solo escritor y lecturas peor concurrentes.
+         * Con varias peticiones RSC + admin, conviene WAL (mejor rendimiento y menos “colas”).
+         */
+        wal: true,
+      }),
   sharp,
   onInit: async (payload) => {
-    /** Evita doble seed si ejecutas `scripts/run-seed-service-packages.ts` (misma condición de carrera en SQLite). */
     if (process.env.PAYLOAD_SKIP_AUTO_SEED === 'true') {
+      return
+    }
+    /** Durante `next build` las tablas pueden no existir aún: no sembrar aquí. */
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
       return
     }
     /** No bloquear el primer request: el seed ya es idempotente y rápido si la BD está poblada. */
@@ -127,6 +147,12 @@ export default buildConfig({
     })
   },
   plugins: [
+    vercelBlobStorage({
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      collections: {
+        media: true,
+      },
+    }),
     seoPlugin({
       collections: ['packages', 'properties', 'blog-posts'],
       globals: ['site-config', 'referral-settings'],

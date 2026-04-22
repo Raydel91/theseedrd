@@ -1,0 +1,7 @@
+.env
+.env.local
+payload.db
+payload.db-shm
+payload.db-wal
+backups
+housing-export

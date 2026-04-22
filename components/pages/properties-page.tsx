@@ -12,6 +12,7 @@ import { pickLocaleWithFallback } from '@/lib/pick-locale'
 import { getRDDivisionLabels } from '@/lib/rd-admin-divisions'
 import { absoluteMediaUrl } from '@/lib/media-url'
 import { getPayloadInstance } from '@/lib/payload-server'
+import type { HouseType, Property, PropertyTag } from '@/payload-types'
 
 const copy = {
   es: {
@@ -78,8 +79,6 @@ export async function PropertiesPage({
   locale: Locale
   search: PropertiesListingSearch
 }) {
-  const payload = await getPayloadInstance()
-
   const tagSlugs = search.etiquetas?.split(',').map((s) => s.trim()).filter(Boolean)
 
   const minBeds =
@@ -97,33 +96,43 @@ export async function PropertiesPage({
     tagSlugs,
   }
 
-  const where = await buildPropertyWhere(payload, filters)
-
-  const [res, houseTypes, propertyTags] = await Promise.all([
-    payload.find({
-      collection: 'properties',
-      where,
-      depth: 2,
-      locale,
-      fallbackLocale: 'es',
-      limit: 48,
-      sort: '-createdAt',
-    }),
-    payload.find({
-      collection: 'house-types',
-      sort: 'sortOrder',
-      locale,
-      fallbackLocale: 'es',
-      limit: 200,
-    }),
-    payload.find({
-      collection: 'property-tags',
-      sort: 'sortOrder',
-      locale,
-      fallbackLocale: 'es',
-      limit: 500,
-    }),
-  ])
+  let res: { docs: Property[] } = { docs: [] }
+  let houseTypes: { docs: HouseType[] } = { docs: [] }
+  let propertyTags: { docs: PropertyTag[] } = { docs: [] }
+  try {
+    const payload = await getPayloadInstance()
+    const where = await buildPropertyWhere(payload, filters)
+    const results = await Promise.all([
+      payload.find({
+        collection: 'properties',
+        where,
+        depth: 2,
+        locale,
+        fallbackLocale: 'es',
+        limit: 48,
+        sort: '-createdAt',
+      }),
+      payload.find({
+        collection: 'house-types',
+        sort: 'sortOrder',
+        locale,
+        fallbackLocale: 'es',
+        limit: 200,
+      }),
+      payload.find({
+        collection: 'property-tags',
+        sort: 'sortOrder',
+        locale,
+        fallbackLocale: 'es',
+        limit: 500,
+      }),
+    ])
+    res = results[0] as typeof res
+    houseTypes = results[1] as typeof houseTypes
+    propertyTags = results[2] as typeof propertyTags
+  } catch {
+    /* BD no disponible: listado vacío y filtros sin opciones */
+  }
 
   const t = copy[locale]
   const r = routeMap[locale]

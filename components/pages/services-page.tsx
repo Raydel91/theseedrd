@@ -6,6 +6,7 @@ import { pickLocaleWithFallback } from '@/lib/pick-locale'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { routeMap } from '@/lib/i18n/routes'
 import { ServiceListJsonLd } from '@/lib/seo/json-ld'
+import type { Package } from '@/payload-types'
 
 const copy = {
   es: {
@@ -23,16 +24,21 @@ const copy = {
 } as const
 
 export async function ServicesPage({ locale }: { locale: Locale }) {
-  const payload = await getPayloadInstance()
-  const packs = await payload.find({
-    collection: 'packages',
-    sort: 'order',
-    locale,
-    fallbackLocale: 'es',
-    limit: 24,
-  })
   const t = copy[locale]
   const r = routeMap[locale]
+  let packs: { docs: Package[] } = { docs: [] }
+  try {
+    const payload = await getPayloadInstance()
+    packs = await payload.find({
+      collection: 'packages',
+      sort: 'order',
+      locale,
+      fallbackLocale: 'es',
+      limit: 24,
+    })
+  } catch {
+    /* BD no disponible o error puntual: no tumbar toda la página */
+  }
   const servicesForLd = packs.docs.map((p) => ({
     name: pickLocaleWithFallback(p.title as string | { es?: string; en?: string }, locale),
     description: pickLocaleWithFallback(p.shortDescription as string | { es?: string; en?: string }, locale),

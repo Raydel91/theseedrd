@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { absoluteMediaUrl } from '@/lib/media-url'
 import { getPayloadInstance } from '@/lib/payload-server'
+import type { TeamMember } from '@/payload-types'
 
 function normalizeExternalUrl(url: string | null | undefined): string | null {
   if (!url?.trim()) return null
@@ -85,14 +86,19 @@ export async function TeamSection({
   title: string
   description: string
 }) {
-  const payload = await getPayloadInstance()
-  const team = await payload.find({
-    collection: 'team-members',
-    sort: 'order',
-    depth: 1,
-    locale,
-    limit: 24,
-  })
+  let team: { docs: TeamMember[] } = { docs: [] }
+  try {
+    const payload = await getPayloadInstance()
+    team = await payload.find({
+      collection: 'team-members',
+      sort: 'order',
+      depth: 1,
+      locale,
+      limit: 24,
+    })
+  } catch {
+    /* BD no disponible: mostrar cabecera sin equipo */
+  }
 
   return (
     <div className="bg-gradient-to-b from-background to-seed-sand-dark/30">
