@@ -42,6 +42,7 @@ const pooledDatabaseUrl =
 const directDatabaseUrl =
   process.env.POSTGRES_URL_NON_POOLING ||
   process.env.DATABASE_DIRECT_URL ||
+  process.env.DATABASE_URL_UNPOOLED ||
   process.env.DIRECT_URL ||
   ''
 

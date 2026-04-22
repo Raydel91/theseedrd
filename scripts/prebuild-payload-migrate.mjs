@@ -28,9 +28,10 @@ if (!force && !onVercel && !onCi) {
 }
 
 const direct =
-  process.env.DATABASE_DIRECT_URL ||
-  process.env.DIRECT_URL ||
   process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_DIRECT_URL ||
+  process.env.DATABASE_URL_UNPOOLED ||
+  process.env.DIRECT_URL ||
   ''
 
 if (!direct.startsWith('postgres')) {
