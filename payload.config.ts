@@ -112,6 +112,7 @@ export default buildConfig({
   db: usePostgres
     ? postgresAdapter({
         push: true,
+        migrationDir: path.resolve(dirname, 'migrations'),
         pool: {
           connectionString: postgresConnectionString,
           /** Vercel: 1 conexión por instancia reduce presión sobre el pooler de Supabase. */
