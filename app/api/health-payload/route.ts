@@ -63,20 +63,24 @@ function collectDeepMessages(e: unknown, maxDepth = 8): string[] {
 function classifyDbError(msg: string, code?: string): string {
   if (code && PG_HINTS[code]) return PG_HINTS[code]
   const m = msg.toLowerCase()
+  /** Antes que "Failed query…to_regclass": suele ser timeout de `pg-pool` al conectar. */
+  if (
+    /timeout exceeded when trying to connect|econnrefused|enotfound|password|authentication|tenant or user|ssl|certificate|connect timeout|connection terminated/i.test(
+      m,
+    )
+  ) {
+    return 'connection'
+  }
   if (/does not exist|relation|table|no existe|undefinedtable/.test(m)) {
     return 'missing_schema'
   }
   if (/prepared statement|unnamed stmt|bind message|protocol|pgbouncer/.test(m)) {
     return 'pooler_prepared_statement'
   }
-  if (
-    /timeout|econnrefused|enotfound|password|authentication|tenant or user|ssl|certificate|network|connect/.test(
-      m,
-    )
-  ) {
+  if (/query timeout|statement timeout|etimedout|timeout/i.test(m)) {
     return 'connection'
   }
-  /** Superficie Drizzle; la causa suele ser pooler o conexión (ver `collectDeepMessages`). */
+  /** Superficie Drizzle si la causa no se propagó. */
   if (/failed query|to_regclass|payload_migrations/i.test(m)) {
     return 'database_query_failed'
   }
@@ -145,14 +149,20 @@ export async function GET() {
     console.error('[health-payload] init', code, msg, deep !== msg ? `| ${deep}` : '')
     if (e instanceof Error && e.stack) console.error(e.stack)
     const pgEnv = summarizePostgresEnvForHealth()
+    const hint = classifyFromError(e)
+    const connectionHint =
+      hint === 'connection'
+        ? 'timeout al conectar: revisa host/puerto/contraseña (Supabase → Database), que el proyecto no esté pausado (reactivar), y que la región del pooler coincida con el panel.'
+        : undefined
     return NextResponse.json(
       {
         ok: false,
         phase: 'init',
-        hint: classifyFromError(e),
+        hint,
         pgCode: code ?? null,
         messageShort: messageShortFromError(e),
         pgEnv,
+        ...(connectionHint ? { connectionHint } : {}),
         ...(pgEnv.transactionPoolerOnlyWarning
           ? {
               fixHint:

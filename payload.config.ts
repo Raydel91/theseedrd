@@ -142,8 +142,13 @@ export default buildConfig({
           connectionString: postgresConnectionString,
           /** Vercel: 1 conexión por instancia reduce presión sobre el pooler de Supabase. */
           max: process.env.VERCEL ? 1 : 10,
-          connectionTimeoutMillis: 20000,
-          idleTimeoutMillis: 20000,
+          /**
+           * Supabase en frío / proyecto recién reactivado puede tardar >20s en aceptar TCP;
+           * si no, `pg` devuelve "timeout exceeded when trying to connect" durante `migrate`.
+           */
+          connectionTimeoutMillis: process.env.VERCEL ? 60000 : 20000,
+          idleTimeoutMillis: process.env.VERCEL ? 30000 : 20000,
+          keepAlive: true,
           application_name: 'the-seed-rd-payload',
         },
       })
