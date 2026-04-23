@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { summarizePostgresEnvForHealth } from '@/lib/postgres-health-hint'
 import { getPayloadInstance } from '@/lib/payload-server'
 
 export const dynamic = 'force-dynamic'
@@ -39,6 +40,26 @@ function pgCodeDeep(e: unknown): string | undefined {
   return undefined
 }
 
+/** Drizzle envuelve el fallo real en `cause`; sin esto solo ves "Failed query: … to_regclass". */
+function collectDeepMessages(e: unknown, maxDepth = 8): string[] {
+  const out: string[] = []
+  let cur: unknown = e
+  for (let i = 0; i < maxDepth && cur; i++) {
+    if (cur instanceof Error && cur.message) out.push(cur.message)
+    else if (typeof cur === 'object' && cur !== null && 'message' in cur) {
+      const m = (cur as { message?: unknown }).message
+      if (typeof m === 'string' && m) out.push(m)
+    }
+    if (cur instanceof Error && cur.cause !== undefined && cur.cause !== null) cur = cur.cause
+    else if (typeof cur === 'object' && cur !== null && 'cause' in cur) {
+      const next = (cur as { cause?: unknown }).cause
+      if (next === undefined || next === null) break
+      cur = next
+    } else break
+  }
+  return out
+}
+
 function classifyDbError(msg: string, code?: string): string {
   if (code && PG_HINTS[code]) return PG_HINTS[code]
   const m = msg.toLowerCase()
@@ -55,7 +76,7 @@ function classifyDbError(msg: string, code?: string): string {
   ) {
     return 'connection'
   }
-  /** Drizzle/Payload al comprobar migraciones (`migrationTableExists` → `to_regclass`). */
+  /** Superficie Drizzle; la causa suele ser pooler o conexión (ver `collectDeepMessages`). */
   if (/failed query|to_regclass|payload_migrations/i.test(m)) {
     return 'database_query_failed'
   }
@@ -66,11 +87,6 @@ function redactConnectionStrings(s: string): string {
   return s.replace(/postgres(ql)?:\/\/[^\s"'`]+/gi, 'postgres://***')
 }
 
-/** Siempre seguro de publicar: primeros caracteres del mensaje, sin URIs de BD. */
-function messageShort(msg: string): string {
-  return redactConnectionStrings(msg).slice(0, 160)
-}
-
 function errorMeta(e: unknown): { errorType: string; messagePreview: string | null } {
   /** No usar `constructor.name` ni `name` minificados (producción → "f"). */
   const errorType = e instanceof Error ? 'Error' : e === null ? 'null' : typeof e
@@ -78,8 +94,19 @@ function errorMeta(e: unknown): { errorType: string; messagePreview: string | nu
     process.env.PAYLOAD_PUBLIC_HEALTH_DETAILS === 'true' &&
     e instanceof Error &&
     e.message
-  const messagePreview = show ? redactConnectionStrings(e.message).slice(0, 220) : null
+  const chain = collectDeepMessages(e).join(' | ')
+  const messagePreview = show ? redactConnectionStrings(chain).slice(0, 400) : null
   return { errorType, messagePreview }
+}
+
+function classifyFromError(e: unknown): string {
+  const combined = collectDeepMessages(e).join('\n')
+  return classifyDbError(combined, pgCodeDeep(e))
+}
+
+function messageShortFromError(e: unknown): string {
+  const combined = collectDeepMessages(e).join(' | ')
+  return redactConnectionStrings(combined).slice(0, 280)
 }
 
 /**
@@ -95,15 +122,17 @@ export async function GET() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       const code = pgCodeDeep(e)
-      console.error('[health-payload] query', code, msg)
+      const deep = collectDeepMessages(e).join(' | ')
+      console.error('[health-payload] query', code, msg, deep !== msg ? `| ${deep}` : '')
       if (e instanceof Error && e.stack) console.error(e.stack)
       return NextResponse.json(
         {
           ok: false,
           phase: 'query',
-          hint: classifyDbError(msg, code),
+          hint: classifyFromError(e),
           pgCode: code ?? null,
-          messageShort: messageShort(msg),
+          messageShort: messageShortFromError(e),
+          pgEnv: summarizePostgresEnvForHealth(),
           ...errorMeta(e),
         },
         { status: 503 },
@@ -112,15 +141,24 @@ export async function GET() {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     const code = pgCodeDeep(e)
-    console.error('[health-payload] init', code, msg)
+    const deep = collectDeepMessages(e).join(' | ')
+    console.error('[health-payload] init', code, msg, deep !== msg ? `| ${deep}` : '')
     if (e instanceof Error && e.stack) console.error(e.stack)
+    const pgEnv = summarizePostgresEnvForHealth()
     return NextResponse.json(
       {
         ok: false,
         phase: 'init',
-        hint: classifyDbError(msg, code),
+        hint: classifyFromError(e),
         pgCode: code ?? null,
-        messageShort: messageShort(msg),
+        messageShort: messageShortFromError(e),
+        pgEnv,
+        ...(pgEnv.transactionPoolerOnlyWarning
+          ? {
+              fixHint:
+                'Define DATABASE_DIRECT_URL (o DATABASE_URL_UNPOOLED) con la URI del Session pooler :5432 de Supabase; no uses solo :6543 para Payload.',
+            }
+          : {}),
         ...errorMeta(e),
       },
       { status: 503 },
