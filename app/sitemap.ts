@@ -48,6 +48,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
+  // En build de Vercel no forzar conexión a Postgres desde sitemap:
+  // evitamos que un TLS/DB transitorio rompa la compilación.
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    const seen = new Map<string, MetadataRoute.Sitemap[0]>()
+    for (const e of entries) {
+      if (!seen.has(e.url)) seen.set(e.url, e)
+    }
+    return [...seen.values()]
+  }
+
   try {
     const payload = await getPayloadInstance()
     const cms = await payload.find({
