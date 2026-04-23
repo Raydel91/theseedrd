@@ -38,12 +38,16 @@ const dirname = path.dirname(filename)
 const pooledDatabaseUrl =
   process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || 'file:./payload.db'
 
-/** Conexión directa (5432, `db.*.supabase.co`): migraciones DDL y Payload evitan fallos del pooler en transacción. */
+/**
+ * URI “fuerte” para el pool de Payload (session pooler, `db.*:5432` con add-on IPv4, etc.).
+ * `POSTGRES_URL_NON_POOLING` va al final: la integración Vercel↔Supabase suele poner ahí el host
+ * `db.*` solo IPv6 y gana sobre `DATABASE_DIRECT_URL` si lo ordenábamos primero → init roto en Vercel.
+ */
 const directDatabaseUrl =
-  process.env.POSTGRES_URL_NON_POOLING ||
   process.env.DATABASE_DIRECT_URL ||
   process.env.DATABASE_URL_UNPOOLED ||
   process.env.DIRECT_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
   ''
 
 const usePostgres =
