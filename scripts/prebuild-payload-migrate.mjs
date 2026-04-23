@@ -1,29 +1,32 @@
 /**
- * Opcional antes de `next build`: migraciones contra Postgres **directo** (Supabase 5432).
- * En Vercel, si falta DATABASE_DIRECT_URL, no hace nada aquí; Payload aplicará `prodMigrations`
- * en el primer arranque (puede ser más lento la primera vez).
+ * Opcional: ejecutar `payload migrate` **antes** de `next build`.
+ *
+ * Por defecto NO corre en Vercel: el CLI de Payload a veces deja promesas sin capturar
+ * en Node 24 y el build falla con ERR_UNHANDLED_REJECTION. Las migraciones siguen
+ * aplicándose al arrancar Payload (`prodMigrations`) con la URL que uses en runtime.
+ *
+ * Forzar en CI/build: PAYLOAD_PREBUILD_MIGRATE=true y una URI directa en env.
  */
 import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 
 const skip = process.env.PAYLOAD_PREBUILD_MIGRATE === 'false'
+/** Solo si es explícitamente `true` (no basta con estar en Vercel). */
 const force = process.env.PAYLOAD_PREBUILD_MIGRATE === 'true'
-const onVercel = process.env.VERCEL === '1'
-const onCi = process.env.CI === 'true'
 
-if (skip) {
+if (skip || !force) {
+  if (!skip) {
+    // eslint-disable-next-line no-console
+    console.info(
+      '[prebuild] Omitiendo `payload migrate` (por defecto). Migraciones: al conectar Payload. Forzar en build: PAYLOAD_PREBUILD_MIGRATE=true + URI directa.',
+    )
+  }
   process.exit(0)
 }
 
 const url = process.env.DATABASE_URL || process.env.POSTGRES_URL || ''
 if (!url.startsWith('postgres')) {
-  process.exit(0)
-}
-
-if (!force && !onVercel && !onCi) {
-  // eslint-disable-next-line no-console
-  console.info(
-    '[prebuild] Saltando migrate (local). Forzar: PAYLOAD_PREBUILD_MIGRATE=true y Postgres accesible.',
-  )
   process.exit(0)
 }
 
@@ -36,20 +39,22 @@ const direct =
 
 if (!direct.startsWith('postgres')) {
   // eslint-disable-next-line no-console
-  console.info(
-    '[prebuild] Sin DATABASE_DIRECT_URL (o POSTGRES_URL_NON_POOLING): migrate en build omitido; Payload aplicará migraciones al conectar.',
+  console.error(
+    '[prebuild] PAYLOAD_PREBUILD_MIGRATE=true requiere DATABASE_DIRECT_URL (o POSTGRES_URL_NON_POOLING, etc.).',
   )
-  process.exit(0)
+  process.exit(1)
 }
 
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const payloadBin = path.join(root, 'node_modules', 'payload', 'bin.js')
 const env = { ...process.env, DATABASE_URL: direct }
 
 // eslint-disable-next-line no-console
-console.info('[prebuild] `payload migrate` usando conexión directa (no pooler 6543)…')
-const r = spawnSync('npx', ['payload', 'migrate'], {
+console.info('[prebuild] Ejecutando `payload migrate` con Node + bin local…')
+const r = spawnSync(process.execPath, [payloadBin, 'migrate'], {
   stdio: 'inherit',
   env,
-  shell: true,
+  cwd: root,
 })
 
 process.exit(r.status === null ? 1 : r.status)
