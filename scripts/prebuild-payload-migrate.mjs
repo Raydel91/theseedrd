@@ -25,22 +25,18 @@ if (skip || !force) {
   process.exit(0)
 }
 
-const url = process.env.DATABASE_URL || process.env.POSTGRES_URL || ''
+const url = process.env.DATABASE_URL || ''
 if (!url.startsWith('postgres')) {
   process.exit(0)
 }
 
 const direct =
-  process.env.DATABASE_DIRECT_URL ||
-  process.env.DATABASE_URL_UNPOOLED ||
-  process.env.DIRECT_URL ||
-  process.env.POSTGRES_URL_NON_POOLING ||
-  ''
+  process.env.DATABASE_DIRECT_URL || process.env.DATABASE_URL_UNPOOLED || process.env.DIRECT_URL || ''
 
 if (!direct.startsWith('postgres')) {
   // eslint-disable-next-line no-console
   console.error(
-    '[prebuild] PAYLOAD_PREBUILD_MIGRATE=true requiere DATABASE_DIRECT_URL (o POSTGRES_URL_NON_POOLING, etc.).',
+    '[prebuild] PAYLOAD_PREBUILD_MIGRATE=true requiere DATABASE_DIRECT_URL (o DATABASE_URL_UNPOOLED / DIRECT_URL).',
   )
   process.exit(1)
 }

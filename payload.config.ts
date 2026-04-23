@@ -34,20 +34,17 @@ import { migrations as postgresProdMigrations } from './migrations'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-/** Pooler (6543 / Prisma) o SQLite por defecto. */
-const pooledDatabaseUrl =
-  process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || 'file:./payload.db'
+/** Pooler transacción (6543) u otra `DATABASE_URL`; SQLite por defecto en local. */
+const pooledDatabaseUrl = process.env.DATABASE_URL || 'file:./payload.db'
 
 /**
- * URI “fuerte” para el pool de Payload (session pooler, `db.*:5432` con add-on IPv4, etc.).
- * `POSTGRES_URL_NON_POOLING` va al final: la integración Vercel↔Supabase suele poner ahí el host
- * `db.*` solo IPv6 y gana sobre `DATABASE_DIRECT_URL` si lo ordenábamos primero → init roto en Vercel.
+ * URI principal del pool de Payload (p. ej. Session pooler en Supabase si `db.*` es solo IPv6).
+ * Solo variables `DATABASE_*` / `DIRECT_URL` — en Vercel borra las `POSTGRES_*` del integrador si las inyecta.
  */
 const directDatabaseUrl =
   process.env.DATABASE_DIRECT_URL ||
   process.env.DATABASE_URL_UNPOOLED ||
   process.env.DIRECT_URL ||
-  process.env.POSTGRES_URL_NON_POOLING ||
   ''
 
 const usePostgres =
