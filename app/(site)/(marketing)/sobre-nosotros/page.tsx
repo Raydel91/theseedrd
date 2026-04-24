@@ -5,6 +5,8 @@ import { BreadcrumbJsonLd, LocalBusinessJsonLd } from '@/lib/seo/json-ld'
 import { publicPageMetadataWithOg } from '@/lib/seo/public-metadata'
 import { getSiteConfig } from '@/lib/site-data'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata(): Promise<Metadata> {
   return publicPageMetadataWithOg('es', 'about', {
     title: 'Sobre nosotros | The Seed RD',
