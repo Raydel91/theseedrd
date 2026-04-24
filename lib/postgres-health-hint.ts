@@ -1,13 +1,18 @@
+import {
+  type PayloadPostgresPoolResolutionKind,
+  resolvePayloadPostgresPoolFromEnv,
+} from '@/lib/postgres-connection'
+
 /**
  * Misma lógica que `payload.config.ts` para saber qué cadena usa el pool de Postgres.
  */
 export function payloadEffectivePostgresUrlRaw(): { url: string; source: 'direct_chain' | 'DATABASE_URL' } | null {
-  const direct =
-    (process.env.DATABASE_DIRECT_URL || process.env.DATABASE_URL_UNPOOLED || process.env.DIRECT_URL || '').trim()
-  const pooled = (process.env.DATABASE_URL || '').trim()
-  if (direct.startsWith('postgres')) return { url: direct, source: 'direct_chain' }
-  if (pooled.startsWith('postgres')) return { url: pooled, source: 'DATABASE_URL' }
-  return null
+  const r = resolvePayloadPostgresPoolFromEnv()
+  if (!r) return null
+  if (r.kind === 'direct_chain_first') {
+    return { url: r.url, source: 'direct_chain' }
+  }
+  return { url: r.url, source: 'DATABASE_URL' }
 }
 
 function parsePgUrlIdentity(raw: string): {
@@ -49,6 +54,8 @@ export function summarizePostgresEnvForHealth(): {
   } | null
   /** Si Payload cae al pool transacción 6543 sin URL “fuerte”, suele fallar `to_regclass`. */
   transactionPoolerOnlyWarning: boolean
+  /** Detalle de cómo se eligió la URL del pool (incluye fallback sesión→transacción). */
+  payloadPoolKind: PayloadPostgresPoolResolutionKind | null
 } {
   const meta = (name: string) => {
     const raw = process.env[name]?.trim()
@@ -83,11 +90,13 @@ export function summarizePostgresEnvForHealth(): {
 
   const pooledRaw = process.env.DATABASE_URL || ''
   const hasDirectPg = Boolean(effectiveDirect)
-  const payloadPoolSource: 'direct_chain' | 'DATABASE_URL' | 'none' = hasDirectPg
-    ? 'direct_chain'
-    : pooledRaw.startsWith('postgres')
-      ? 'DATABASE_URL'
-      : 'none'
+
+  const poolResolution = resolvePayloadPostgresPoolFromEnv()
+  const payloadPoolSource: 'direct_chain' | 'DATABASE_URL' | 'none' = poolResolution
+    ? poolResolution.kind === 'direct_chain_first'
+      ? 'direct_chain'
+      : 'DATABASE_URL'
+    : 'none'
 
   const transactionPoolerOnlyWarning =
     !hasDirectPg && /[:@]6543(\/|\?|#|$)/i.test(pooledRaw)
@@ -124,5 +133,6 @@ export function summarizePostgresEnvForHealth(): {
     payloadPoolSource,
     payloadConnection,
     transactionPoolerOnlyWarning,
+    payloadPoolKind: poolResolution?.kind ?? null,
   }
 }

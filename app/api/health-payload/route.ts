@@ -71,6 +71,9 @@ function classifyDbError(msg: string, code?: string): string {
   ) {
     return 'connection'
   }
+  if (/maxclientsinsessionmode|session mode max clients are limited to pool_size/i.test(m)) {
+    return 'session_pooler_exhausted'
+  }
   if (/does not exist|relation|table|no existe|undefinedtable/.test(m)) {
     return 'missing_schema'
   }
@@ -129,14 +132,21 @@ export async function GET() {
       const deep = collectDeepMessages(e).join(' | ')
       console.error('[health-payload] query', code, msg, deep !== msg ? `| ${deep}` : '')
       if (e instanceof Error && e.stack) console.error(e.stack)
+      const qHint = classifyFromError(e)
+      const qPgEnv = summarizePostgresEnvForHealth()
+      const qSessionHint =
+        qHint === 'session_pooler_exhausted'
+          ? 'Supabase pooler en modo sesión (:5432) agota clientes con muchas funciones en Vercel. Pon DATABASE_URL al pooler en transacción (:6543) y despliega la versión con fallback al pool transacción para runtime.'
+          : undefined
       return NextResponse.json(
         {
           ok: false,
           phase: 'query',
-          hint: classifyFromError(e),
+          hint: qHint,
           pgCode: code ?? null,
           messageShort: messageShortFromError(e),
-          pgEnv: summarizePostgresEnvForHealth(),
+          pgEnv: qPgEnv,
+          ...(qSessionHint ? { fixHint: qSessionHint } : {}),
           ...errorMeta(e),
         },
         { status: 503 },
@@ -161,6 +171,10 @@ export async function GET() {
     const poolerUserHint = pgEnv.payloadConnection?.suggestPoolerUserFormat
       ? 'Usuario detectado: postgres en pooler.supabase.com. Suele ser incorrecto: usa la URI tal cual Supabase (usuario postgres.<project_ref>).'
       : undefined
+    const sessionPoolerHint =
+      hint === 'session_pooler_exhausted'
+        ? 'Supabase pooler en modo sesión (:5432) agota clientes con muchas funciones en Vercel. Pon DATABASE_URL al pooler en transacción (:6543) y DATABASE_DIRECT_URL en sesión solo si lo necesitas; despliega la versión que usa DATABASE_URL para el pool en runtime (fallback automático).'
+        : undefined
     return NextResponse.json(
       {
         ok: false,
@@ -172,7 +186,8 @@ export async function GET() {
         ...(connectionHint ? { connectionHint } : {}),
         ...(authHint ? { authHint } : {}),
         ...(poolerUserHint ? { poolerUserHint } : {}),
-        ...(pgEnv.transactionPoolerOnlyWarning
+        ...(sessionPoolerHint ? { fixHint: sessionPoolerHint } : {}),
+        ...(pgEnv.transactionPoolerOnlyWarning && !sessionPoolerHint
           ? {
               fixHint:
                 'Define DATABASE_DIRECT_URL (o DATABASE_URL_UNPOOLED) con la URI del Session pooler :5432 de Supabase; no uses solo :6543 para Payload.',

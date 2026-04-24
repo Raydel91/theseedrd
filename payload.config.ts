@@ -27,7 +27,11 @@ import { seedServicePackages } from './payload/seed/seed-service-packages'
 import { AdminRegistry } from './payload/globals/AdminRegistry'
 import { SiteConfig } from './payload/globals/SiteConfig'
 import { ReferralSettings } from './payload/globals/ReferralSettings'
-import { isSupabaseSessionPoolerUrl, normalizePostgresConnectionString } from './lib/postgres-connection'
+import {
+  isSupabaseSessionPoolerUrl,
+  normalizePostgresConnectionString,
+  resolvePayloadPostgresPoolFromEnv,
+} from './lib/postgres-connection'
 import { isValidVercelBlobReadWriteToken } from './lib/vercel-blob-token'
 import { migrations as postgresProdMigrations } from './migrations'
 
@@ -37,30 +41,16 @@ const dirname = path.dirname(filename)
 /** Pooler transacción (6543) u otra `DATABASE_URL`; SQLite por defecto en local. */
 const pooledDatabaseUrl = process.env.DATABASE_URL || 'file:./payload.db'
 
-/**
- * URI principal del pool de Payload (p. ej. Session pooler en Supabase si `db.*` es solo IPv6).
- * Solo variables `DATABASE_*` / `DIRECT_URL` — en Vercel borra las `POSTGRES_*` del integrador si las inyecta.
- */
-const directDatabaseUrl =
-  process.env.DATABASE_DIRECT_URL ||
-  process.env.DATABASE_URL_UNPOOLED ||
-  process.env.DIRECT_URL ||
-  ''
-
-const usePostgres =
-  pooledDatabaseUrl.startsWith('postgres://') ||
-  pooledDatabaseUrl.startsWith('postgresql://') ||
-  directDatabaseUrl.startsWith('postgres://') ||
-  directDatabaseUrl.startsWith('postgresql://')
-
-const postgresPoolUrl = directDatabaseUrl.startsWith('postgres') ? directDatabaseUrl : pooledDatabaseUrl
+const postgresPoolResolution = resolvePayloadPostgresPoolFromEnv()
+const usePostgres = Boolean(postgresPoolResolution)
+const postgresPoolUrl = postgresPoolResolution?.url ?? ''
 
 const databaseURL = usePostgres ? postgresPoolUrl : pooledDatabaseUrl
 const postgresConnectionString = usePostgres
   ? normalizePostgresConnectionString(postgresPoolUrl)
   : pooledDatabaseUrl
 
-/** Session pooler Supabase (:5432): un solo cliente por instancia; si no, `MaxClientsInSessionMode`. */
+/** Session pooler Supabase (:5432): `pool.max` bajo (sigue aplicando si no hay fallback a :6543). */
 const sessionPooler = usePostgres && isSupabaseSessionPoolerUrl(postgresPoolUrl)
 
 export default buildConfig({
