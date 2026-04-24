@@ -20,11 +20,13 @@ export function HeroHome({
   title,
   subtitle,
   welcomeText,
+  greetingText,
 }: {
   locale: Locale
   title: string
   subtitle: string
   welcomeText: string
+  greetingText?: string
 }) {
   const ref = useRef(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
@@ -54,6 +56,11 @@ export function HeroHome({
       </div>
 
       <div className="relative z-20 mx-auto flex w-full max-w-7xl flex-col justify-start px-4 pb-20 pt-8 sm:px-6 md:min-h-[92vh] md:justify-center md:pb-24 md:pt-28 lg:px-8">
+        {greetingText ? (
+          <p className="mb-3 self-center text-center text-sm font-semibold text-white/95 sm:text-base">
+            {greetingText}
+          </p>
+        ) : null}
         <p className="mb-4 text-xs font-semibold uppercase tracking-[0.35em] text-seed-turquoise">
           {welcomeText}
         </p>

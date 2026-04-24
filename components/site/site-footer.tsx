@@ -147,6 +147,12 @@ export function SiteFooter({ locale, site }: { locale: Locale; site: SiteConfig 
         <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-primary-foreground/70 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-6 sm:gap-y-2">
           <span>
             © {new Date().getFullYear()} {t.brand}. {t.footer.rights}
+            {' '}
+            <span>Desarrollado por </span>
+            <span style={{ fontFamily: 'Segoe UI, sans-serif' }}>R&amp;M</span>{' '}
+            <span style={{ fontFamily: '"Times New Roman", serif', fontStyle: 'italic' }}>
+              AutomaticSolutions
+            </span>
           </span>
           {rnc ? (
             <span>

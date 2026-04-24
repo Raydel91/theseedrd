@@ -9,6 +9,7 @@ import { getPayloadInstance } from '@/lib/payload-server'
 import { getSiteConfig, pickLocalizedString, PAYLOAD_READ_TIMEOUT_MS, runWithTimeout } from '@/lib/site-data'
 import { routeMap } from '@/lib/i18n/routes'
 import Link from 'next/link'
+import { auth } from '@/auth'
 
 const blurbs = {
   es: [
@@ -24,7 +25,7 @@ const blurbs = {
 } as const
 
 export async function HomeContent({ locale }: { locale: Locale }) {
-  const [site, testimonialsResult] = await Promise.all([
+  const [site, testimonialsResult, session] = await Promise.all([
     getSiteConfig(locale),
     (async () => {
       try {
@@ -51,6 +52,7 @@ export async function HomeContent({ locale }: { locale: Locale }) {
         return { docs: [] as Testimonial[] }
       }
     })(),
+    auth(),
   ])
 
   const testimonials = testimonialsResult
@@ -93,12 +95,20 @@ export async function HomeContent({ locale }: { locale: Locale }) {
     locale,
     locale === 'es' ? 'República Dominicana' : 'Dominican Republic',
   )
+  const displayName = session?.user?.name?.trim() || ''
+  const greetingText = displayName ? `Bienvenid@ ${displayName}` : undefined
 
   const r = routeMap[locale]
 
   return (
     <>
-      <HeroHome locale={locale} title={title} subtitle={subtitle} welcomeText={welcomeText} />
+      <HeroHome
+        locale={locale}
+        title={title}
+        subtitle={subtitle}
+        welcomeText={welcomeText}
+        greetingText={greetingText}
+      />
       <TestimonialCarousel
         items={items}
         title={
