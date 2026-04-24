@@ -97,10 +97,10 @@ export default buildConfig({
         },
       ],
     },
-    components: {
-      /** Esquina superior derecha: acceso al login del sitio (portal clientes / NextAuth). */
-      actions: ['./payload/admin/AdminSiteLoginLink.tsx#AdminSiteLoginLink'],
-    },
+    // Hotfix: desactivar acciones custom del header hasta recuperar UI del admin.
+    // components: {
+    //   actions: ['./payload/admin/AdminSiteLoginLink.tsx#AdminSiteLoginLink'],
+    // },
     importMap: {
       baseDir: path.resolve(dirname),
     },
