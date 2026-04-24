@@ -55,20 +55,20 @@ export function HeroHome({
         </motion.div>
       </div>
 
-      <div className="relative z-20 mx-auto flex w-full max-w-7xl flex-col justify-start px-4 pb-20 pt-8 sm:px-6 md:min-h-[92vh] md:justify-center md:pb-24 md:pt-28 lg:px-8">
+      <div className="relative z-20 mx-auto flex w-full max-w-7xl flex-col justify-start gap-16 px-4 pb-20 pt-8 sm:px-6 md:min-h-[92vh] md:justify-center md:pb-24 md:pt-28 lg:px-8">
         {greetingText ? (
-          <p className="mb-3 self-center text-center text-sm font-semibold text-white/95 sm:text-base">
+          <p className="self-center text-center text-sm font-semibold text-white/95 sm:text-base">
             {greetingText}
           </p>
         ) : null}
-        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.35em] text-seed-turquoise">
+        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-seed-turquoise">
           {welcomeText}
         </p>
         <h1 className="font-heading max-w-4xl text-4xl font-semibold leading-tight text-white drop-shadow-sm sm:text-5xl md:text-6xl">
           {title}
         </h1>
-        <p className="mt-6 max-w-2xl text-lg text-white/90 md:text-xl">{subtitle}</p>
-        <div className="mt-10 flex flex-wrap gap-4">
+        <p className="max-w-2xl text-lg text-white/90 md:text-xl">{subtitle}</p>
+        <div className="flex flex-wrap gap-4">
           <Link
             href={r.contact}
             className={buttonVariants({
@@ -92,7 +92,7 @@ export function HeroHome({
           </Link>
         </div>
 
-        <div className="mt-16 grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-3">
           {[
             { icon: ShieldCheck, text: t.hero.trust1 },
             { icon: Compass, text: t.hero.trust2 },
