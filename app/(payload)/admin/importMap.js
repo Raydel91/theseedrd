@@ -28,7 +28,7 @@ import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ConsultationReplyActionsField as ConsultationReplyActionsField_e09a3d7f2418758c32310cc8afa9e36e } from '../../../payload/admin/ConsultationReplyActions.tsx'
 import { ConsultationReplyActionsCell as ConsultationReplyActionsCell_e09a3d7f2418758c32310cc8afa9e36e } from '../../../payload/admin/ConsultationReplyActions.tsx'
-import { AdminSiteLoginLink as AdminSiteLoginLink_e126b27f7239ab7ab192581ae02d18ff } from '../../../payload/admin/AdminSiteLoginLink.tsx'
+import { VercelBlobClientUploadHandler as VercelBlobClientUploadHandler_7a4e3288f8dd4923b6c1144af4da51f6 } from '@payloadcms/storage-vercel-blob/client'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 /** @type import('payload').ImportMap */
@@ -63,6 +63,6 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "./payload/admin/ConsultationReplyActions.tsx#ConsultationReplyActionsField": ConsultationReplyActionsField_e09a3d7f2418758c32310cc8afa9e36e,
   "./payload/admin/ConsultationReplyActions.tsx#ConsultationReplyActionsCell": ConsultationReplyActionsCell_e09a3d7f2418758c32310cc8afa9e36e,
-  "./payload/admin/AdminSiteLoginLink.tsx#AdminSiteLoginLink": AdminSiteLoginLink_e126b27f7239ab7ab192581ae02d18ff,
+  "@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler": VercelBlobClientUploadHandler_7a4e3288f8dd4923b6c1144af4da51f6,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

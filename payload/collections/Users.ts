@@ -103,9 +103,8 @@ export const Users: CollectionConfig = {
           ...(originalDoc as object as User),
           ...data,
         }
-        /** Solo el asistente inicial de `/admin` (BD vacía). No confundir con altas públicas sin sesión. */
-        const { totalDocs: userCount } = await req.payload.count({ collection: 'users' })
-        const isFirstUserBootstrap = operation === 'create' && !req.user && userCount === 0
+        /** Solo el asistente inicial de `/admin` (sin sesión). */
+        const isFirstUserBootstrap = operation === 'create' && !req.user
 
         // Flujo nativo de Payload: creación del primer usuario sin sesión activa.
         // Debe poder completarse aunque la UI no envíe todos los campos custom.
