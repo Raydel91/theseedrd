@@ -61,7 +61,6 @@ export const Users: CollectionConfig = {
       label: 'Equipo (staff)',
       admin: {
         description: 'Acceso de equipo al panel Payload (contenido, casos, etc.). Compatible con administrador.',
-        condition: (data) => data?.accountKind === 'internal',
       },
     },
     {
@@ -72,7 +71,6 @@ export const Users: CollectionConfig = {
       admin: {
         description:
           'Máximo 3 administradores en total. El primer admin queda como “principal” y solo él puede nombrar a los otros dos admins (cuentas internas).',
-        condition: (data) => data?.accountKind === 'internal',
       },
     },
     {
