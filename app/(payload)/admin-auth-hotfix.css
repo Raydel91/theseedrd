@@ -1,0 +1,36 @@
+/* Hotfix de contraste para pantallas auth de Payload (/admin/login y /admin/create-first-user). */
+
+/* Títulos y textos de bienvenida */
+.template-login h1,
+.template-login h2,
+.template-login h3,
+.template-login p,
+.template-login .message,
+.template-login [class*='welcome'],
+.template-login [class*='subtitle'],
+.template-login [class*='description'],
+.create-first-user h1,
+.create-first-user h2,
+.create-first-user p,
+.create-first-user [class*='welcome'],
+.create-first-user [class*='description'] {
+  color: #0a1f1a !important;
+}
+
+/* Inputs legibles */
+.template-login input,
+.template-login textarea,
+.template-login select,
+.create-first-user input,
+.create-first-user textarea,
+.create-first-user select {
+  color: #0a1f1a !important;
+  background: #ffffff !important;
+  border-color: rgba(10, 31, 26, 0.2) !important;
+}
+
+/* Placeholder legible */
+.template-login input::placeholder,
+.create-first-user input::placeholder {
+  color: rgba(10, 31, 26, 0.55) !important;
+}

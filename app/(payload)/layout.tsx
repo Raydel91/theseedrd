@@ -7,6 +7,7 @@ import React from 'react'
 import { importMap } from './admin/importMap'
 // Hotfix: desactivar estilos custom mientras estabilizamos render del admin en producción.
 // import './custom.scss'
+import './admin-auth-hotfix.css'
 
 type Args = {
   children: React.ReactNode
