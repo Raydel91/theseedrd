@@ -87,12 +87,18 @@ export async function HomeContent({ locale }: { locale: Locale }) {
       ? 'Legal, vivienda y lifestyle — un equipo boutique para familias y profesionales en República Dominicana.'
       : 'Legal, home, and lifestyle — a boutique team for families and professionals in the Dominican Republic.',
   )
+  const welcomeText = pickLocalizedString(
+    site?.welcomeText,
+    null,
+    locale,
+    locale === 'es' ? 'República Dominicana' : 'Dominican Republic',
+  )
 
   const r = routeMap[locale]
 
   return (
     <>
-      <HeroHome locale={locale} title={title} subtitle={subtitle} />
+      <HeroHome locale={locale} title={title} subtitle={subtitle} welcomeText={welcomeText} />
       <TestimonialCarousel
         items={items}
         title={

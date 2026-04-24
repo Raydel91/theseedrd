@@ -19,10 +19,12 @@ export function HeroHome({
   locale,
   title,
   subtitle,
+  welcomeText,
 }: {
   locale: Locale
   title: string
   subtitle: string
+  welcomeText: string
 }) {
   const ref = useRef(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
@@ -53,7 +55,7 @@ export function HeroHome({
 
       <div className="relative z-20 mx-auto flex w-full max-w-7xl flex-col justify-start px-4 pb-20 pt-8 sm:px-6 md:min-h-[92vh] md:justify-center md:pb-24 md:pt-28 lg:px-8">
         <p className="mb-4 text-xs font-semibold uppercase tracking-[0.35em] text-seed-turquoise">
-          República Dominicana
+          {welcomeText}
         </p>
         <h1 className="font-heading max-w-4xl text-4xl font-semibold leading-tight text-white drop-shadow-sm sm:text-5xl md:text-6xl">
           {title}
