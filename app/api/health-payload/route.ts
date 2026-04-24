@@ -154,6 +154,13 @@ export async function GET() {
       hint === 'connection'
         ? 'timeout al conectar: revisa host/puerto/contraseña (Supabase → Database), que el proyecto no esté pausado (reactivar), y que la región del pooler coincida con el panel.'
         : undefined
+    const authHint =
+      code === '28P01' || /password authentication failed/i.test(msg)
+        ? '28P01: usuario o contraseña en la URI no coinciden con Supabase. Copia de nuevo ambas URIs completas desde el panel (tras reset de password si hace falta). Si la contraseña tiene @ : / # etc., debe ir URL-encoded en la URI.'
+        : undefined
+    const poolerUserHint = pgEnv.payloadConnection?.suggestPoolerUserFormat
+      ? 'Usuario detectado: postgres en pooler.supabase.com. Suele ser incorrecto: usa la URI tal cual Supabase (usuario postgres.<project_ref>).'
+      : undefined
     return NextResponse.json(
       {
         ok: false,
@@ -163,6 +170,8 @@ export async function GET() {
         messageShort: messageShortFromError(e),
         pgEnv,
         ...(connectionHint ? { connectionHint } : {}),
+        ...(authHint ? { authHint } : {}),
+        ...(poolerUserHint ? { poolerUserHint } : {}),
         ...(pgEnv.transactionPoolerOnlyWarning
           ? {
               fixHint:

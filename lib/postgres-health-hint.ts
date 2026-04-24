@@ -1,4 +1,34 @@
 /**
+ * Misma lógica que `payload.config.ts` para saber qué cadena usa el pool de Postgres.
+ */
+export function payloadEffectivePostgresUrlRaw(): { url: string; source: 'direct_chain' | 'DATABASE_URL' } | null {
+  const direct =
+    (process.env.DATABASE_DIRECT_URL || process.env.DATABASE_URL_UNPOOLED || process.env.DIRECT_URL || '').trim()
+  const pooled = (process.env.DATABASE_URL || '').trim()
+  if (direct.startsWith('postgres')) return { url: direct, source: 'direct_chain' }
+  if (pooled.startsWith('postgres')) return { url: pooled, source: 'DATABASE_URL' }
+  return null
+}
+
+function parsePgUrlIdentity(raw: string): {
+  user: string
+  host: string
+  port: string
+  parseError?: string
+} {
+  try {
+    const u = new URL(raw)
+    return {
+      user: decodeURIComponent(u.username || ''),
+      host: u.hostname,
+      port: u.port || '5432',
+    }
+  } catch {
+    return { user: '', host: '', port: '', parseError: 'invalid_postgres_url' }
+  }
+}
+
+/**
  * Metadatos seguros para `/api/health-payload` (sin contraseñas ni querystring completa).
  */
 export function summarizePostgresEnvForHealth(): {
@@ -7,6 +37,16 @@ export function summarizePostgresEnvForHealth(): {
   /** Primera URL “fuerte” que usa `payload.config` (mismo orden que allí). */
   effectiveDirect: { envKey: string; host?: string; port?: string } | null
   payloadPoolSource: 'direct_chain' | 'DATABASE_URL' | 'none'
+  /** Cadena efectiva que Payload usa para conectar (misma regla que payload.config). */
+  payloadConnection: {
+    source: 'direct_chain' | 'DATABASE_URL'
+    user: string
+    host: string
+    port: string
+    parseError?: string
+    /** Pooler Supabase suele exigir `postgres.<ref>`, no `postgres` solo. */
+    suggestPoolerUserFormat?: boolean
+  } | null
   /** Si Payload cae al pool transacción 6543 sin URL “fuerte”, suele fallar `to_regclass`. */
   transactionPoolerOnlyWarning: boolean
 } {
@@ -52,11 +92,37 @@ export function summarizePostgresEnvForHealth(): {
   const transactionPoolerOnlyWarning =
     !hasDirectPg && /[:@]6543(\/|\?|#|$)/i.test(pooledRaw)
 
+  const eff = payloadEffectivePostgresUrlRaw()
+  let payloadConnection: {
+    source: 'direct_chain' | 'DATABASE_URL'
+    user: string
+    host: string
+    port: string
+    parseError?: string
+    suggestPoolerUserFormat?: boolean
+  } | null = null
+  if (eff) {
+    const id = parsePgUrlIdentity(eff.url)
+    const lowerHost = id.host.toLowerCase()
+    const isPooler = lowerHost.includes('pooler.supabase.com')
+    const suggestPoolerUserFormat =
+      Boolean(id.user) && id.user === 'postgres' && isPooler
+    payloadConnection = {
+      source: eff.source,
+      user: id.user || '(empty-user)',
+      host: id.host || '(empty-host)',
+      port: id.port,
+      ...(id.parseError ? { parseError: id.parseError } : {}),
+      ...(suggestPoolerUserFormat ? { suggestPoolerUserFormat: true } : {}),
+    }
+  }
+
   return {
     DATABASE_URL: meta('DATABASE_URL'),
     DATABASE_DIRECT_URL: meta('DATABASE_DIRECT_URL'),
     effectiveDirect,
     payloadPoolSource,
+    payloadConnection,
     transactionPoolerOnlyWarning,
   }
 }
