@@ -169,6 +169,10 @@ export default buildConfig({
       }),
   sharp,
   onInit: async (payload) => {
+    // En producción, no sembrar automáticamente salvo que se fuerce explícitamente.
+    if (process.env.NODE_ENV === 'production' && process.env.PAYLOAD_ENABLE_AUTO_SEED !== 'true') {
+      return
+    }
     if (process.env.PAYLOAD_SKIP_AUTO_SEED === 'true') {
       return
     }

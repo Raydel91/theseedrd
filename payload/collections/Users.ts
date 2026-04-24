@@ -129,6 +129,9 @@ export const Users: CollectionConfig = {
         }
 
         if (merged.accountKind === 'internal' && merged.isAdmin === true) {
+          if (isFirstUserBootstrap) {
+            return merged
+          }
           const payload = req.payload
           const docId = originalDoc?.id
           const wasAdmin = Boolean((originalDoc as User | undefined)?.isAdmin)
@@ -198,21 +201,26 @@ export const Users: CollectionConfig = {
         if (!u.isAdmin || u.accountKind !== 'internal') return
 
         const payload = req.payload
-        const reg = await payload.findGlobal({
-          slug: 'admin-registry',
-          depth: 0,
-          overrideAccess: true,
-        })
-        const hasPrimary = Boolean(resolveUserId(reg?.primaryAdmin as unknown))
-
-        if (!hasPrimary) {
-          await payload.updateGlobal({
+        try {
+          const reg = await payload.findGlobal({
             slug: 'admin-registry',
-            data: {
-              primaryAdmin: u.id,
-            },
+            depth: 0,
             overrideAccess: true,
           })
+          const hasPrimary = Boolean(resolveUserId(reg?.primaryAdmin as unknown))
+
+          if (!hasPrimary) {
+            await payload.updateGlobal({
+              slug: 'admin-registry',
+              data: {
+                primaryAdmin: u.id,
+              },
+              overrideAccess: true,
+            })
+          }
+        } catch (err) {
+          // No bloquear registro/login por un fallo transitorio de DB en este global.
+          req.payload.logger.error({ err, msg: '[users.afterChange] admin-registry sync skipped' })
         }
       },
     ],
