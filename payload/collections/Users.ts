@@ -150,7 +150,11 @@ export const Users: CollectionConfig = {
             throw new APIError('Ya hay 3 administradores. Para añadir otro, primero revoca el rol a uno existente.', 400)
           }
 
-          const reg = await payload.findGlobal({ slug: 'admin-registry', depth: 0 })
+          const reg = await payload.findGlobal({
+            slug: 'admin-registry',
+            depth: 0,
+            overrideAccess: true,
+          })
           const primaryId = resolveUserId(reg?.primaryAdmin as unknown)
 
           const assigningNewAdmin = !wasAdmin
@@ -197,7 +201,11 @@ export const Users: CollectionConfig = {
         if (!u.isAdmin || u.accountKind !== 'internal') return
 
         const payload = req.payload
-        const reg = await payload.findGlobal({ slug: 'admin-registry', depth: 0 })
+        const reg = await payload.findGlobal({
+          slug: 'admin-registry',
+          depth: 0,
+          overrideAccess: true,
+        })
         const hasPrimary = Boolean(resolveUserId(reg?.primaryAdmin as unknown))
 
         if (!hasPrimary) {
@@ -206,6 +214,7 @@ export const Users: CollectionConfig = {
             data: {
               primaryAdmin: u.id,
             },
+            overrideAccess: true,
           })
         }
       },
