@@ -5,7 +5,8 @@ import { handleServerFunctions, RootLayout } from '@payloadcms/next/layouts'
 import React from 'react'
 
 import { importMap } from './admin/importMap'
-import './custom.scss'
+// Hotfix: desactivar estilos custom mientras estabilizamos render del admin en producción.
+// import './custom.scss'
 
 type Args = {
   children: React.ReactNode
