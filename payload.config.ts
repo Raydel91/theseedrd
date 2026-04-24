@@ -27,7 +27,7 @@ import { seedServicePackages } from './payload/seed/seed-service-packages'
 import { AdminRegistry } from './payload/globals/AdminRegistry'
 import { SiteConfig } from './payload/globals/SiteConfig'
 import { ReferralSettings } from './payload/globals/ReferralSettings'
-import { normalizePostgresConnectionString } from './lib/postgres-connection'
+import { isSupabaseSessionPoolerUrl, normalizePostgresConnectionString } from './lib/postgres-connection'
 import { isValidVercelBlobReadWriteToken } from './lib/vercel-blob-token'
 import { migrations as postgresProdMigrations } from './migrations'
 
@@ -59,6 +59,9 @@ const databaseURL = usePostgres ? postgresPoolUrl : pooledDatabaseUrl
 const postgresConnectionString = usePostgres
   ? normalizePostgresConnectionString(postgresPoolUrl)
   : pooledDatabaseUrl
+
+/** Session pooler Supabase (:5432): un solo cliente por instancia; si no, `MaxClientsInSessionMode`. */
+const sessionPooler = usePostgres && isSupabaseSessionPoolerUrl(postgresPoolUrl)
 
 export default buildConfig({
   graphQL: {
@@ -141,10 +144,12 @@ export default buildConfig({
         pool: {
           connectionString: postgresConnectionString,
           /**
-           * `max: 1` en Vercel puede atascar peticiones concurrentes (admin + health + init)
-           * y terminar en `timeout exceeded when trying to connect` del `pg-pool`.
+           * Session pooler Supabase (:5432) → obligatorio `max: 1` (límite PgBouncer).
+           * Con pool transacción (:6543) en Vercel se puede subir (p. ej. 3) vía `PAYLOAD_DB_POOL_MAX`.
            */
-          max: Number(process.env.PAYLOAD_DB_POOL_MAX || (process.env.VERCEL ? 3 : 10)),
+          max: sessionPooler
+            ? 1
+            : Number(process.env.PAYLOAD_DB_POOL_MAX || (process.env.VERCEL ? 3 : 10)),
           /**
            * Supabase en frío / proyecto recién reactivado puede tardar >20s en aceptar TCP;
            * si no, `pg` devuelve "timeout exceeded when trying to connect" durante `migrate`.

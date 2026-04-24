@@ -7,6 +7,20 @@
  *   Esto evita fallos TLS en runtimes con `pg` reciente (`SELF_SIGNED_CERT_IN_CHAIN`)
  *   por el cambio de semántica de sslmode.
  */
+/**
+ * Pooler de Supabase en **modo sesión** (`*.pooler.supabase.*` puerto **5432**):
+ * PgBouncer limita clientes concurrentes (`MaxClientsInSessionMode`). En serverless
+ * conviene `pool.max = 1` para esa URI.
+ *
+ * Modo **transacción** usa puerto **6543** (misma familia de hosts).
+ */
+export function isSupabaseSessionPoolerUrl(raw: string): boolean {
+  const lower = raw.trim().toLowerCase()
+  if (!lower.includes('pooler.supabase.')) return false
+  if (/[:@]6543(\/|\?|#|$)/.test(lower)) return false
+  return true
+}
+
 export function normalizePostgresConnectionString(raw: string): string {
   let url = raw.trim()
   if (!url) return url
