@@ -2,8 +2,10 @@
 export function isValidVercelBlobReadWriteToken(
   token: string | undefined,
 ): token is string {
-  return (
-    typeof token === 'string' &&
-    /^vercel_blob_rw_[a-z\d]+_[a-z\d]+$/i.test(token.trim())
-  )
+  if (typeof token !== 'string') return false
+  const value = token.trim()
+  if (!value) return false
+  // Vercel puede variar el sufijo del token con nuevos formatos.
+  // Mantener validación por prefijo evita falsos negativos que desactivan el plugin de storage.
+  return value.toLowerCase().startsWith('vercel_blob_rw_')
 }
