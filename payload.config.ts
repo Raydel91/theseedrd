@@ -140,8 +140,11 @@ export default buildConfig({
         prodMigrations: postgresProdMigrations,
         pool: {
           connectionString: postgresConnectionString,
-          /** Vercel: 1 conexión por instancia reduce presión sobre el pooler de Supabase. */
-          max: process.env.VERCEL ? 1 : 10,
+          /**
+           * `max: 1` en Vercel puede atascar peticiones concurrentes (admin + health + init)
+           * y terminar en `timeout exceeded when trying to connect` del `pg-pool`.
+           */
+          max: Number(process.env.PAYLOAD_DB_POOL_MAX || (process.env.VERCEL ? 3 : 10)),
           /**
            * Supabase en frío / proyecto recién reactivado puede tardar >20s en aceptar TCP;
            * si no, `pg` devuelve "timeout exceeded when trying to connect" durante `migrate`.
