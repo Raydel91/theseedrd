@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import { ServicesPage } from '@/components/pages/services-page'
 import { publicPageMetadataWithOg } from '@/lib/seo/public-metadata'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata(): Promise<Metadata> {
   return publicPageMetadataWithOg('en', 'services', {
     title: 'Relocation & residency services | The Seed RD',
