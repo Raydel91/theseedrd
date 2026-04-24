@@ -84,8 +84,8 @@ export default buildConfig({
     ],
   },
   admin: {
-    /** Tema oscuro + `custom.scss`: evita mezcla con variables claras de Payload. */
-    theme: 'dark',
+    /** Hotfix visual: usar tema nativo claro hasta estabilizar estilos custom del admin. */
+    theme: 'light',
     user: Users.slug,
     meta: {
       titleSuffix: '— The Seed RD',
