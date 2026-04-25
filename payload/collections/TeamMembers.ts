@@ -3,6 +3,7 @@ import { APIError } from 'payload'
 
 import type { User } from '@/payload-types'
 import { canAccessPayloadAdmin } from '@/payload/access/user-helpers'
+import { reconcileAllUsersDirectoryRecords } from '@/lib/user-directory-sync'
 
 function linkedUserId(raw: unknown): string | number | null {
   if (raw == null) return null
@@ -27,6 +28,16 @@ export const TeamMembers: CollectionConfig = {
     delete: ({ req: { user } }) => (user as User | undefined)?.isAdmin === true,
   },
   hooks: {
+    beforeOperation: [
+      async ({ operation, req }) => {
+        if (operation !== 'read') return
+        const actor = req.user as User | undefined
+        if (!canAccessPayloadAdmin(actor)) return
+        if (req.context?.didDirectoryReconcile) return
+        req.context = { ...(req.context || {}), didDirectoryReconcile: true }
+        await reconcileAllUsersDirectoryRecords(req.payload)
+      },
+    ],
     beforeChange: [
       async ({ data, req }) => {
         const uid = linkedUserId((data as { linkedUser?: unknown }).linkedUser)
@@ -94,6 +105,15 @@ export const TeamMembers: CollectionConfig = {
       name: 'facebook',
       type: 'text',
       label: 'Facebook URL',
+    },
+    {
+      name: 'published',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'Publicado',
+      admin: {
+        description: 'Si está activo, el miembro aparece en “Sobre nosotros”.',
+      },
     },
     {
       name: 'order',

@@ -250,6 +250,10 @@ export interface TeamMember {
   instagram?: string | null;
   whatsapp?: string | null;
   facebook?: string | null;
+  /**
+   * Si está activo, el miembro aparece en “Sobre nosotros”.
+   */
+  published?: boolean | null;
   order?: number | null;
   /**
    * Si se rellena, debe ser un usuario interno con «Equipo». Se limpia solo si el usuario pasa a cliente o pierde staff.
@@ -903,6 +907,7 @@ export interface TeamMembersSelect<T extends boolean = true> {
   instagram?: T;
   whatsapp?: T;
   facebook?: T;
+  published?: T;
   order?: T;
   linkedUser?: T;
   updatedAt?: T;

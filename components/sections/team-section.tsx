@@ -91,6 +91,7 @@ export async function TeamSection({
     const payload = await getPayloadInstance()
     team = await payload.find({
       collection: 'team-members',
+      where: { published: { equals: true } },
       sort: 'order',
       depth: 1,
       locale,

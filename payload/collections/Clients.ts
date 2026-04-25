@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import type { User } from '@/payload-types'
 import { canAccessPayloadAdmin, isPortalClient } from '@/payload/access/user-helpers'
+import { reconcileAllUsersDirectoryRecords } from '@/lib/user-directory-sync'
 
 /** Expedientes / casos para el timeline del dashboard del cliente */
 export const Clients: CollectionConfig = {
@@ -26,6 +27,18 @@ export const Clients: CollectionConfig = {
     create: ({ req: { user } }) => canAccessPayloadAdmin(user as User),
     update: ({ req: { user } }) => canAccessPayloadAdmin(user as User),
     delete: ({ req: { user } }) => (user as User | undefined)?.isAdmin === true,
+  },
+  hooks: {
+    beforeOperation: [
+      async ({ operation, req }) => {
+        if (operation !== 'read') return
+        const actor = req.user as User | undefined
+        if (!canAccessPayloadAdmin(actor)) return
+        if (req.context?.didDirectoryReconcile) return
+        req.context = { ...(req.context || {}), didDirectoryReconcile: true }
+        await reconcileAllUsersDirectoryRecords(req.payload)
+      },
+    ],
   },
   fields: [
     {
