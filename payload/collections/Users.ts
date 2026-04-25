@@ -15,7 +15,8 @@ function generateReferralCode(): string {
 }
 
 function adminFlagChanged(next: boolean | undefined | null, prev: boolean): boolean {
-  return Boolean(next) !== prev
+  if (typeof next !== 'boolean') return false
+  return next !== prev
 }
 
 export const Users: CollectionConfig = {

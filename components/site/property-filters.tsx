@@ -7,6 +7,7 @@ import { useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { Slider } from '@/components/ui/slider'
 import {
   Select,
   SelectContent,
@@ -33,10 +34,12 @@ export function PropertyFilters({
   locale,
   houseTypeOptions,
   tagOptions,
+  dopRate,
 }: {
   locale: Locale
   houseTypeOptions: { slug: string; label: string }[]
   tagOptions: { slug: string; label: string; category: string }[]
+  dopRate: number
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -102,8 +105,7 @@ export function PropertyFilters({
           beds: 'Mín. habitaciones',
           baths: 'Mín. baños',
           currency: 'Moneda',
-          priceMin: 'Precio mínimo',
-          priceMax: 'Precio máximo',
+          priceRange: 'Rango de precio',
           tags: 'Etiquetas',
           all: 'Todas',
           allMuni: 'Todos',
@@ -119,8 +121,7 @@ export function PropertyFilters({
           beds: 'Min. bedrooms',
           baths: 'Min. bathrooms',
           currency: 'Currency',
-          priceMin: 'Min. price',
-          priceMax: 'Max. price',
+          priceRange: 'Price range',
           tags: 'Tags',
           all: 'All',
           allMuni: 'All',
@@ -128,6 +129,16 @@ export function PropertyFilters({
           clear: 'Clear filters',
           tagGroups: { general: 'General', style: 'Style' },
         }
+
+  const sliderMin = 0
+  const usdSliderMax = 5000000
+  const sliderMax = moneda === 'DOP' ? Math.round(usdSliderMax * dopRate) : usdSliderMax
+  const sliderStep = moneda === 'DOP' ? Math.max(10000, Math.round(dopRate * 1000)) : 5000
+  const rawMin = Number(precioMin || sliderMin)
+  const rawMax = Number(precioMax || sliderMax)
+  const clampedMin = Number.isFinite(rawMin) ? Math.min(Math.max(rawMin, sliderMin), sliderMax) : sliderMin
+  const clampedMax = Number.isFinite(rawMax) ? Math.max(Math.min(rawMax, sliderMax), clampedMin) : sliderMax
+  const sliderValue: [number, number] = [clampedMin, clampedMax]
 
   const tagsByCat = useMemo(() => {
     const g: Record<'general' | 'style', typeof tagOptions> = {
@@ -315,28 +326,27 @@ export function PropertyFilters({
           </Select>
         </div>
 
-        <div>
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t.priceMin}</Label>
-          <input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            value={precioMin}
-            onChange={(e) => setParams({ [Q_PRECIO_MIN]: e.currentTarget.value || undefined })}
-            className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-          />
-        </div>
-
-        <div>
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t.priceMax}</Label>
-          <input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            value={precioMax}
-            onChange={(e) => setParams({ [Q_PRECIO_MAX]: e.currentTarget.value || undefined })}
-            className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-          />
+        <div className="lg:col-span-2 xl:col-span-3">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t.priceRange}</Label>
+          <div className="mt-3 rounded-xl border border-seed-forest/10 bg-background/60 p-4">
+            <Slider
+              min={sliderMin}
+              max={sliderMax}
+              step={sliderStep}
+              value={sliderValue}
+              onValueChange={(next) => {
+                const [nextMin, nextMax] = next as [number, number]
+                setParams({
+                  [Q_PRECIO_MIN]: String(Math.round(nextMin)),
+                  [Q_PRECIO_MAX]: String(Math.round(nextMax)),
+                })
+              }}
+            />
+            <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+              <span>{Math.round(sliderValue[0]).toLocaleString(locale === 'en' ? 'en-US' : 'es-DO')}</span>
+              <span>{Math.round(sliderValue[1]).toLocaleString(locale === 'en' ? 'en-US' : 'es-DO')}</span>
+            </div>
+          </div>
         </div>
       </div>
 

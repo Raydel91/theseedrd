@@ -185,6 +185,7 @@ export async function PropertiesPage({
           locale={locale}
           houseTypeOptions={houseTypeOptions}
           tagOptions={tagOptions}
+          dopRate={dopRate}
         />
       </Suspense>
 
