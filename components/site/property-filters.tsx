@@ -133,7 +133,7 @@ export function PropertyFilters({
   const sliderMin = 0
   const usdSliderMax = 5000000
   const sliderMax = moneda === 'DOP' ? Math.round(usdSliderMax * dopRate) : usdSliderMax
-  const sliderStep = moneda === 'DOP' ? Math.max(10000, Math.round(dopRate * 1000)) : 5000
+  const sliderStep = moneda === 'DOP' ? Math.max(1, Math.round(dopRate)) : 1000
   const rawMin = Number(precioMin || sliderMin)
   const rawMax = Number(precioMax || sliderMax)
   const clampedMin = Number.isFinite(rawMin) ? Math.min(Math.max(rawMin, sliderMin), sliderMax) : sliderMin

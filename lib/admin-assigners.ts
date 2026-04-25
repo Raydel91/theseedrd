@@ -37,9 +37,12 @@ export async function getAdminAssignerIds(payload: Payload): Promise<Set<string>
 
 export async function actorCanAssignAdminRole(
   payload: Payload,
-  actor: User | { id: string | number } | null | undefined,
+  actor: User | { id: string | number; isAdmin?: boolean | null } | null | undefined,
 ): Promise<boolean> {
   if (!actor?.id) return false
   const assigners = await getAdminAssignerIds(payload)
-  return assigners.has(String(actor.id))
+  if (assigners.has(String(actor.id))) return true
+  // Fallback seguro: si aún no hay principal en registry, permite a un admin existente desbloquear gestión.
+  if (assigners.size === 0 && (actor as { isAdmin?: boolean | null }).isAdmin === true) return true
+  return false
 }

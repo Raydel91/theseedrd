@@ -166,6 +166,10 @@ export interface User {
    */
   isStaff?: boolean | null;
   /**
+   * Obligatoria cuando la cuenta está marcada como Equipo (staff).
+   */
+  profilePhoto?: (number | null) | Media;
+  /**
    * Máximo 3 administradores. Solo el administrador principal o un delegado (definidos en Administración sistema) pueden cambiar este campo en cuentas ajenas; puedes quitarte el rol a ti mismo.
    */
   isAdmin?: boolean | null;
@@ -823,6 +827,7 @@ export interface UsersSelect<T extends boolean = true> {
   lastName?: T;
   accountKind?: T;
   isStaff?: T;
+  profilePhoto?: T;
   isAdmin?: T;
   referralCode?: T;
   totalReferralEarnings?: T;

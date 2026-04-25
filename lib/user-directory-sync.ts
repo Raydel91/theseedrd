@@ -35,6 +35,41 @@ export async function syncUserDirectoryRecords(
     }
   }
 
+  if (staffOk) {
+    const profilePhoto = (user as User & { profilePhoto?: number | null }).profilePhoto
+    const fullName = displayName(user)
+    const existingTeam = await payload.find({
+      collection: 'team-members',
+      where: { linkedUser: { equals: user.id } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+    if (existingTeam.docs.length === 0 && profilePhoto) {
+      await payload.create({
+        collection: 'team-members',
+        data: {
+          name: fullName,
+          title: 'Staff',
+          photo: profilePhoto,
+          linkedUser: user.id,
+        },
+        overrideAccess: true,
+      })
+    } else if (existingTeam.docs.length > 0) {
+      await payload.update({
+        collection: 'team-members',
+        id: existingTeam.docs[0].id,
+        data: {
+          name: fullName,
+          ...(profilePhoto ? { photo: profilePhoto } : {}),
+          linkedUser: user.id,
+        },
+        overrideAccess: true,
+      })
+    }
+  }
+
   if (kind === 'client') {
     const fullName = displayName(user)
     const existing = await payload.find({

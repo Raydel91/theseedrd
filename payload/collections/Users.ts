@@ -66,6 +66,15 @@ export const Users: CollectionConfig = {
       },
     },
     {
+      name: 'profilePhoto',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'Foto de perfil (staff)',
+      admin: {
+        description: 'Obligatoria cuando la cuenta está marcada como Equipo (staff).',
+      },
+    },
+    {
       name: 'isAdmin',
       type: 'checkbox',
       defaultValue: false,
@@ -133,6 +142,12 @@ export const Users: CollectionConfig = {
               'Cuenta interna: marca al menos «Equipo» o «Administrador».',
               400,
             )
+          }
+          if (internalStaff) {
+            const hasPhoto = Boolean(merged.profilePhoto)
+            if (!hasPhoto) {
+              throw new APIError('La foto de perfil es obligatoria para usuarios de staff.', 400)
+            }
           }
         }
 
