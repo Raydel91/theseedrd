@@ -33,6 +33,7 @@ import {
   resolvePayloadPostgresPoolFromEnv,
 } from './lib/postgres-connection'
 import { isValidVercelBlobReadWriteToken } from './lib/vercel-blob-token'
+import { reconcileAllUsersDirectoryRecords } from './lib/user-directory-sync'
 import { migrations as postgresProdMigrations } from './migrations'
 
 const filename = fileURLToPath(import.meta.url)
@@ -164,19 +165,24 @@ export default buildConfig({
       }),
   sharp,
   onInit: async (payload) => {
-    // En producción, no sembrar automáticamente salvo que se fuerce explícitamente.
-    if (process.env.NODE_ENV === 'production' && process.env.PAYLOAD_ENABLE_AUTO_SEED !== 'true') {
-      return
-    }
-    if (process.env.PAYLOAD_SKIP_AUTO_SEED === 'true') {
-      return
-    }
-    /** Durante `next build` las tablas pueden no existir aún: no sembrar aquí. */
+    /** Durante `next build` las tablas pueden no existir aún. */
     if (process.env.NEXT_PHASE === 'phase-production-build') {
       return
     }
-    /** No bloquear el primer request: el seed ya es idempotente y rápido si la BD está poblada. */
+    /** No bloquear el primer request: reconciliación y seed se ejecutan en background. */
     queueMicrotask(() => {
+      if (process.env.PAYLOAD_SKIP_DIRECTORY_RECONCILE !== 'true') {
+        void reconcileAllUsersDirectoryRecords(payload).catch((err: unknown) => {
+          console.error('[payload] reconcileAllUsersDirectoryRecords', err)
+        })
+      }
+      // En producción, sembrar solo si se habilita explícitamente.
+      if (process.env.NODE_ENV === 'production' && process.env.PAYLOAD_ENABLE_AUTO_SEED !== 'true') {
+        return
+      }
+      if (process.env.PAYLOAD_SKIP_AUTO_SEED === 'true') {
+        return
+      }
       void seedPropertyTaxonomies(payload).catch((err: unknown) => {
         console.error('[payload] seedPropertyTaxonomies', err)
       })

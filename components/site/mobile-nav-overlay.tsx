@@ -6,7 +6,7 @@ import { copy } from '@/lib/i18n/copy'
 import { routeMap } from '@/lib/i18n/routes'
 import { cn } from '@/lib/utils'
 
-const NAV_KEYS = ['home', 'homes', 'services', 'about', 'contact'] as const
+const NAV_KEYS = ['home', 'homes', 'services', 'blog', 'about', 'contact'] as const
 
 /**
  * Solo el panel a pantalla completa (fuera del header para no quedar recortado).

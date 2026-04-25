@@ -42,7 +42,31 @@ export async function actorCanAssignAdminRole(
   if (!actor?.id) return false
   const assigners = await getAdminAssignerIds(payload)
   if (assigners.has(String(actor.id))) return true
-  // Fallback seguro: si aún no hay principal en registry, permite a un admin existente desbloquear gestión.
-  if (assigners.size === 0 && (actor as { isAdmin?: boolean | null }).isAdmin === true) return true
+  // Fallback seguro: si registry está vacío/huérfano, permite a un admin existente desbloquear gestión.
+  const actorDoc =
+    (await payload
+      .findByID({
+        collection: 'users',
+        id: actor.id,
+        depth: 0,
+        overrideAccess: true,
+      })
+      .catch(() => null)) as User | null
+
+  const actorIsAdmin = actorDoc?.isAdmin === true || (actor as { isAdmin?: boolean | null }).isAdmin === true
+  if (!actorIsAdmin) return false
+
+  if (assigners.size === 0) return true
+
+  const activeAssigners = await payload.find({
+    collection: 'users',
+    where: {
+      and: [{ id: { in: [...assigners] } }, { accountKind: { equals: 'internal' } }, { isAdmin: { equals: true } }],
+    },
+    limit: 10,
+    depth: 0,
+    overrideAccess: true,
+  })
+  if (activeAssigners.docs.length === 0) return true
   return false
 }

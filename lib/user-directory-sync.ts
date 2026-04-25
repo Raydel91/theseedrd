@@ -149,3 +149,23 @@ export async function clearTeamMemberLinksForUser(payload: Payload, userId: stri
     })
   }
 }
+
+/** Backfill idempotente para poblar listas de Clients/TeamMembers desde users existentes. */
+export async function reconcileAllUsersDirectoryRecords(payload: Payload): Promise<void> {
+  let page = 1
+  const limit = 100
+  for (;;) {
+    const res = await payload.find({
+      collection: 'users',
+      limit,
+      page,
+      depth: 0,
+      overrideAccess: true,
+    })
+    for (const doc of res.docs as User[]) {
+      await syncUserDirectoryRecords(payload, doc, undefined)
+    }
+    if (!res.hasNextPage) break
+    page += 1
+  }
+}
