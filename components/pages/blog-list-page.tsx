@@ -16,8 +16,8 @@ const copy = {
   },
 } as const
 
-export function BlogListPage({ locale }: { locale: Locale }) {
-  const posts = listPosts(locale)
+export async function BlogListPage({ locale }: { locale: Locale }) {
+  const posts = await listPosts(locale)
   const r = routeMap[locale]
   const t = copy[locale]
 

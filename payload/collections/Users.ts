@@ -3,18 +3,19 @@ import { APIError } from 'payload'
 import { randomBytes } from 'crypto'
 
 import type { User } from '@/payload-types'
+import { actorCanAssignAdminRole, resolveUserId } from '@/lib/admin-assigners'
+import {
+  clearTeamMemberLinksForUser,
+  deleteClientRecordsForUser,
+  syncUserDirectoryRecords,
+} from '@/lib/user-directory-sync'
 
 function generateReferralCode(): string {
   return `TSR-${randomBytes(3).toString('hex').toUpperCase()}`
 }
 
-function resolveUserId(rel: unknown): string | number | null {
-  if (rel == null) return null
-  if (typeof rel === 'object' && 'id' in rel && (rel as { id: unknown }).id != null) {
-    return (rel as { id: string | number }).id
-  }
-  if (typeof rel === 'string' || typeof rel === 'number') return rel
-  return null
+function adminFlagChanged(next: boolean | undefined | null, prev: boolean): boolean {
+  return Boolean(next) !== prev
 }
 
 export const Users: CollectionConfig = {
@@ -51,7 +52,7 @@ export const Users: CollectionConfig = {
       ],
       admin: {
         description:
-          'Cliente: solo portal público. Interno: puede ser equipo, administrador o ambos (máx. 3 administradores en todo el sistema).',
+          'Cliente: portal y expediente en Clientes. Interno: staff y/o admin (máx. 3 administradores). Los clientes no pueden figurar en Equipo.',
       },
     },
     {
@@ -60,7 +61,7 @@ export const Users: CollectionConfig = {
       defaultValue: false,
       label: 'Equipo (staff)',
       admin: {
-        description: 'Acceso de equipo al panel Payload (contenido, casos, etc.). Compatible con administrador.',
+        description: 'Acceso de equipo al panel Payload. No aplica a cuentas solo-cliente.',
       },
     },
     {
@@ -68,9 +69,18 @@ export const Users: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       label: 'Administrador',
+      access: {
+        create: () => true,
+        update: async ({ req, id }) => {
+          const actor = req.user as User | undefined
+          if (!actor?.id) return false
+          if (id != null && String(actor.id) === String(id)) return true
+          return actorCanAssignAdminRole(req.payload, actor)
+        },
+      },
       admin: {
         description:
-          'Máximo 3 administradores en total. El primer admin queda como “principal” y solo él puede nombrar a los otros dos admins (cuentas internas).',
+          'Máximo 3 administradores. Solo el administrador principal o un delegado (definidos en Administración sistema) pueden cambiar este campo en cuentas ajenas; puedes quitarte el rol a ti mismo.',
       },
     },
     {
@@ -101,11 +111,8 @@ export const Users: CollectionConfig = {
           ...(originalDoc as object as User),
           ...data,
         }
-        /** Solo el asistente inicial de `/admin` (sin sesión). */
         const isFirstUserBootstrap = operation === 'create' && !req.user
 
-        // Flujo nativo de Payload: creación del primer usuario sin sesión activa.
-        // Debe poder completarse aunque la UI no envíe todos los campos custom.
         if (isFirstUserBootstrap) {
           merged.accountKind = 'internal'
           merged.isStaff = true
@@ -128,59 +135,55 @@ export const Users: CollectionConfig = {
           }
         }
 
-        if (merged.accountKind === 'internal' && merged.isAdmin === true) {
-          if (isFirstUserBootstrap) {
-            return merged
-          }
+        const wasAdmin = Boolean((originalDoc as User | undefined)?.isAdmin)
+        const nextAdmin = merged.isAdmin === true
+        const adminToggled = adminFlagChanged(merged.isAdmin, wasAdmin)
+
+        if (merged.accountKind === 'internal' && adminToggled && !isFirstUserBootstrap) {
           const payload = req.payload
+          const actor = req.user as User | undefined
           const docId = originalDoc?.id
-          const wasAdmin = Boolean((originalDoc as User | undefined)?.isAdmin)
+          const isSelf =
+            Boolean(actor?.id) &&
+            operation === 'update' &&
+            docId != null &&
+            String(actor.id) === String(docId)
 
-          const { totalDocs: otherAdminCount } = await payload.count({
-            collection: 'users',
-            where: {
-              and: [
-                { isAdmin: { equals: true } },
-                ...(docId != null ? [{ id: { not_equals: docId } }] : []),
-              ],
-            },
-          })
-
-          if (!wasAdmin && otherAdminCount >= 3) {
-            throw new APIError('Ya hay 3 administradores. Para añadir otro, primero revoca el rol a uno existente.', 400)
-          }
-
-          const reg = await payload.findGlobal({
-            slug: 'admin-registry',
-            depth: 0,
-            overrideAccess: true,
-          })
-          const primaryId = resolveUserId(reg?.primaryAdmin as unknown)
-
-          const assigningNewAdmin = !wasAdmin
-
-          const promotingAnotherUser =
-            assigningNewAdmin &&
-            req.user &&
-            (operation === 'create' ||
-              (docId != null && String(docId) !== String(req.user.id)))
-
-          if (promotingAnotherUser) {
-            const actor = req.user
-            if (!actor) {
-              throw new APIError('Sesión requerida para asignar administradores.', 401)
+          if (isSelf) {
+            if (nextAdmin && !wasAdmin) {
+              throw new APIError('No puedes asignarte el rol de administrador tú mismo.', 403)
             }
-            if (primaryId == null) {
-              throw new APIError(
-                'El primer administrador debe crearse con el registro inicial de Payload (sin sesión). Luego solo el administrador principal puede nombrar a los demás.',
-                403,
-              )
+          } else {
+            const targetsOther =
+              operation === 'create' ||
+              (operation === 'update' && docId != null && String(docId) !== String(actor?.id))
+
+            if (targetsOther) {
+              const canAssign = await actorCanAssignAdminRole(payload, actor)
+              if (!canAssign) {
+                throw new APIError(
+                  'Solo el administrador principal o un delegado autorizado puede cambiar el rol de administrador de otras cuentas.',
+                  403,
+                )
+              }
             }
-            if (String(actor.id) !== String(primaryId)) {
-              throw new APIError(
-                'Solo el administrador principal puede asignar el rol de administrador a otras cuentas.',
-                403,
-              )
+
+            if (nextAdmin && !wasAdmin) {
+              const { totalDocs: otherAdminCount } = await payload.count({
+                collection: 'users',
+                where: {
+                  and: [
+                    { isAdmin: { equals: true } },
+                    ...(docId != null ? [{ id: { not_equals: docId } }] : []),
+                  ],
+                },
+              })
+              if (otherAdminCount >= 3) {
+                throw new APIError(
+                  'Ya hay 3 administradores. Para añadir otro, primero revoca el rol a uno existente.',
+                  400,
+                )
+              }
             }
           }
         }
@@ -196,31 +199,46 @@ export const Users: CollectionConfig = {
       },
     ],
     afterChange: [
-      async ({ doc, req }) => {
+      async ({ doc, req, previousDoc }) => {
         const u = doc as User
-        if (!u.isAdmin || u.accountKind !== 'internal') return
-
-        const payload = req.payload
-        try {
-          const reg = await payload.findGlobal({
-            slug: 'admin-registry',
-            depth: 0,
-            overrideAccess: true,
-          })
-          const hasPrimary = Boolean(resolveUserId(reg?.primaryAdmin as unknown))
-
-          if (!hasPrimary) {
-            await payload.updateGlobal({
+        if (u.isAdmin && u.accountKind === 'internal') {
+          const payload = req.payload
+          try {
+            const reg = await payload.findGlobal({
               slug: 'admin-registry',
-              data: {
-                primaryAdmin: u.id,
-              },
+              depth: 0,
               overrideAccess: true,
             })
+            const hasPrimary = Boolean(resolveUserId(reg?.primaryAdmin as unknown))
+            if (!hasPrimary) {
+              await payload.updateGlobal({
+                slug: 'admin-registry',
+                data: {
+                  primaryAdmin: u.id,
+                },
+                overrideAccess: true,
+              })
+            }
+          } catch (err) {
+            req.payload.logger.error({ err, msg: '[users.afterChange] admin-registry sync skipped' })
           }
+        }
+
+        try {
+          await syncUserDirectoryRecords(req.payload, u, previousDoc as User | undefined)
         } catch (err) {
-          // No bloquear registro/login por un fallo transitorio de DB en este global.
-          req.payload.logger.error({ err, msg: '[users.afterChange] admin-registry sync skipped' })
+          req.payload.logger.error({ err, msg: '[users.afterChange] directory sync failed' })
+        }
+      },
+    ],
+    afterDelete: [
+      async ({ doc, req }) => {
+        const id = (doc as User).id
+        try {
+          await deleteClientRecordsForUser(req.payload, id)
+          await clearTeamMemberLinksForUser(req.payload, id)
+        } catch (err) {
+          req.payload.logger.error({ err, msg: '[users.afterDelete] cleanup failed' })
         }
       },
     ],

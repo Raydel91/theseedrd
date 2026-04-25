@@ -1,8 +1,7 @@
 import type { MetadataRoute } from 'next'
 
-import { listPosts } from '@/lib/blog'
+import { listPostsForSitemap } from '@/lib/blog'
 import { routeMap } from '@/lib/i18n/routes'
-import { getPayloadInstance } from '@/lib/payload-server'
 
 const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
@@ -37,7 +36,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   for (const locale of ['es', 'en'] as const) {
-    for (const post of listPosts(locale)) {
+    const posts = await listPostsForSitemap(locale)
+    for (const post of posts) {
       const path = locale === 'es' ? `/blog/${post.slug}` : `/en/blog/${post.slug}`
       entries.push({
         url: new URL(path, base).toString(),
@@ -48,38 +48,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  // En build de Vercel no forzar conexión a Postgres desde sitemap:
-  // evitamos que un TLS/DB transitorio rompa la compilación.
+  // En build de Vercel no forzar más consultas a Postgres desde el sitemap.
   if (process.env.NEXT_PHASE === 'phase-production-build') {
     const seen = new Map<string, MetadataRoute.Sitemap[0]>()
     for (const e of entries) {
       if (!seen.has(e.url)) seen.set(e.url, e)
     }
     return [...seen.values()]
-  }
-
-  try {
-    const payload = await getPayloadInstance()
-    const cms = await payload.find({
-      collection: 'blog-posts',
-      where: { published: { equals: true } },
-      limit: 500,
-      depth: 0,
-    })
-    for (const doc of cms.docs) {
-      const slug = typeof doc.slug === 'string' ? doc.slug : ''
-      if (!slug) continue
-      const path = `/blog/${slug}`
-      const lm = doc.updatedAt ? new Date(doc.updatedAt) : now
-      entries.push({
-        url: new URL(path, base).toString(),
-        lastModified: lm,
-        changeFrequency: 'monthly',
-        priority: 0.65,
-      })
-    }
-  } catch {
-    /* SQLite / Payload no disponible en build estático */
   }
 
   const seen = new Map<string, MetadataRoute.Sitemap[0]>()

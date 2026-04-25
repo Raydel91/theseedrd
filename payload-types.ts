@@ -158,15 +158,15 @@ export interface User {
   firstName?: string | null;
   lastName?: string | null;
   /**
-   * Cliente: solo portal público. Interno: puede ser equipo, administrador o ambos (máx. 3 administradores en todo el sistema).
+   * Cliente: portal y expediente en Clientes. Interno: staff y/o admin (máx. 3 administradores). Los clientes no pueden figurar en Equipo.
    */
   accountKind: 'client' | 'internal';
   /**
-   * Acceso de equipo al panel Payload (contenido, casos, etc.). Compatible con administrador.
+   * Acceso de equipo al panel Payload. No aplica a cuentas solo-cliente.
    */
   isStaff?: boolean | null;
   /**
-   * Máximo 3 administradores en total. El primer admin queda como “principal” y solo él puede nombrar a los otros dos admins (cuentas internas).
+   * Máximo 3 administradores. Solo el administrador principal o un delegado (definidos en Administración sistema) pueden cambiar este campo en cuentas ajenas; puedes quitarte el rol a ti mismo.
    */
   isAdmin?: boolean | null;
   /**
@@ -231,7 +231,7 @@ export interface Media {
   };
 }
 /**
- * Equipo visible en /sobre-nosotros
+ * Equipo visible en /sobre-nosotros. Solo cuentas internas con staff; no clientes.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "team-members".
@@ -247,6 +247,10 @@ export interface TeamMember {
   whatsapp?: string | null;
   facebook?: string | null;
   order?: number | null;
+  /**
+   * Si se rellena, debe ser un usuario interno con «Equipo». Se limpia solo si el usuario pasa a cliente o pierde staff.
+   */
+  linkedUser?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -895,6 +899,7 @@ export interface TeamMembersSelect<T extends boolean = true> {
   whatsapp?: T;
   facebook?: T;
   order?: T;
+  linkedUser?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1218,7 +1223,7 @@ export interface ReferralSetting {
   createdAt?: string | null;
 }
 /**
- * El primer administrador queda registrado aquí. Solo él puede asignar el rol de administrador a otras cuentas internas (hasta 3 admins en total, incluido él).
+ * El primer administrador queda como principal. Solo él puede editar esta pantalla. Puede designar hasta 2 delegados internos que también puedan promover o revocar administradores en otras cuentas (máximo 3 administradores en total en Usuarios).
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "admin-registry".
@@ -1226,9 +1231,13 @@ export interface ReferralSetting {
 export interface AdminRegistry {
   id: number;
   /**
-   * Definido automáticamente al crear el primer admin. Solo este usuario puede promover a otros admins.
+   * Definido automáticamente al crear el primer admin en Payload.
    */
   primaryAdmin?: (number | null) | User;
+  /**
+   * Hasta 2 usuarios internos que pueden promover o revocar el rol de administrador en otras cuentas. Solo el administrador principal puede modificar esta lista.
+   */
+  delegates?: (number | User)[] | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -1289,6 +1298,7 @@ export interface ReferralSettingsSelect<T extends boolean = true> {
  */
 export interface AdminRegistrySelect<T extends boolean = true> {
   primaryAdmin?: T;
+  delegates?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

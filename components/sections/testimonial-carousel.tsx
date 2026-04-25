@@ -88,8 +88,12 @@ export function TestimonialCarousel({
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="hidden md:flex" />
-          <CarouselNext className="hidden md:flex" />
+          {items.length > 1 ? (
+            <>
+              <CarouselPrevious className="left-2 border-seed-forest/20 bg-background/90" />
+              <CarouselNext className="right-2 border-seed-forest/20 bg-background/90" />
+            </>
+          ) : null}
         </Carousel>
       </div>
     </section>

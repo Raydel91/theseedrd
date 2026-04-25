@@ -11,7 +11,10 @@ export const BlogPosts: CollectionConfig = {
     description: 'Artículos del blog (URLs /blog/[slug] cuando publiques desde aquí)',
   },
   access: {
-    read: () => true,
+    read: ({ req: { user } }) => {
+      if (user) return true
+      return { published: { equals: true } }
+    },
     create: ({ req: { user } }) => !!user,
     update: ({ req: { user } }) => !!user,
     delete: ({ req: { user } }) => (user as User | undefined)?.isAdmin === true,
