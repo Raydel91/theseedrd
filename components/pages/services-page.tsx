@@ -2,10 +2,17 @@ import Link from 'next/link'
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import type { Locale } from '@/lib/i18n/copy'
+import {
+  formatPropertyPrice,
+  getDopRateFromSiteConfig,
+  normalizePropertyCurrency,
+  toDisplayPrice,
+} from '@/lib/property-currency'
 import { pickLocaleWithFallback } from '@/lib/pick-locale'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { routeMap } from '@/lib/i18n/routes'
 import { ServiceListJsonLd } from '@/lib/seo/json-ld'
+import { getSiteConfig } from '@/lib/site-data'
 import type { Package } from '@/payload-types'
 
 const copy = {
@@ -14,18 +21,23 @@ const copy = {
     intro: 'Paquetes modulares con precios transparentes. Ajustamos cada roadmap a tu familia y objetivos.',
     defaultCta: 'Solicitar',
     defaultBilling: 'por caso',
+    currency: 'Moneda',
   },
   en: {
     title: 'Services',
     intro: 'Modular packages with transparent pricing. We tailor every roadmap to your family and goals.',
     defaultCta: 'Request',
     defaultBilling: 'per case',
+    currency: 'Currency',
   },
 } as const
 
-export async function ServicesPage({ locale }: { locale: Locale }) {
+export async function ServicesPage({ locale, currencyParam }: { locale: Locale; currencyParam?: string }) {
   const t = copy[locale]
   const r = routeMap[locale]
+  const selectedCurrency = normalizePropertyCurrency(currencyParam)
+  const site = await getSiteConfig(locale)
+  const dopRate = getDopRateFromSiteConfig(site)
   let packs: { docs: Package[] } = { docs: [] }
   try {
     const payload = await getPayloadInstance()
@@ -50,6 +62,29 @@ export async function ServicesPage({ locale }: { locale: Locale }) {
     <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
       <h1 className="font-heading text-4xl font-semibold text-seed-forest md:text-5xl">{t.title}</h1>
       <p className="mt-4 max-w-2xl text-lg text-muted-foreground">{t.intro}</p>
+      <div className="mt-4 flex items-center gap-2 text-xs">
+        <span className="text-muted-foreground">{t.currency}:</span>
+        <Link
+          href={selectedCurrency === 'USD' ? r.services : `${r.services}?moneda=USD`}
+          className={
+            selectedCurrency === 'USD'
+              ? 'rounded-full bg-seed-forest px-3 py-1 font-medium text-white'
+              : 'rounded-full border border-seed-forest/20 px-3 py-1 text-seed-forest'
+          }
+        >
+          USD
+        </Link>
+        <Link
+          href={`${r.services}?moneda=DOP`}
+          className={
+            selectedCurrency === 'DOP'
+              ? 'rounded-full bg-seed-forest px-3 py-1 font-medium text-white'
+              : 'rounded-full border border-seed-forest/20 px-3 py-1 text-seed-forest'
+          }
+        >
+          RD$
+        </Link>
+      </div>
       <div className="mt-14 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {packs.docs.map((p) => {
           const title = pickLocaleWithFallback(p.title as string | { es?: string; en?: string }, locale)
@@ -71,7 +106,11 @@ export async function ServicesPage({ locale }: { locale: Locale }) {
                 <CardHeader>
                   <CardTitle className="font-heading text-2xl text-seed-forest">{title}</CardTitle>
                   <p className="text-3xl font-semibold text-seed-emerald">
-                    ${p.price as number}
+                    {formatPropertyPrice(
+                      toDisplayPrice(p.price as number, selectedCurrency, dopRate),
+                      selectedCurrency,
+                      locale,
+                    )}
                     <span className="text-base font-normal text-muted-foreground">
                       {' '}
                       / {billing || t.defaultBilling}

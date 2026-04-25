@@ -14,6 +14,11 @@ export async function generateMetadata(): Promise<Metadata> {
   })
 }
 
-export default function ServicesEnPage() {
-  return <ServicesPage locale="en" />
+export default async function ServicesEnPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ moneda?: string }>
+}) {
+  const sp = await searchParams
+  return <ServicesPage locale="en" currencyParam={sp.moneda} />
 }
