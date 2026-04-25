@@ -11,6 +11,8 @@ export type PropertyListFilters = {
   filterHouseTypeSlug?: string
   minBeds?: number
   minBaths?: number
+  minPriceUsd?: number
+  maxPriceUsd?: number
   tagSlugs?: string[]
 }
 
@@ -48,6 +50,12 @@ export async function buildPropertyWhere(
   }
   if (f.minBaths != null && f.minBaths > 0) {
     and.push({ baths: { greater_than_equal: f.minBaths } })
+  }
+  if (f.minPriceUsd != null && Number.isFinite(f.minPriceUsd) && f.minPriceUsd >= 0) {
+    and.push({ price: { greater_than_equal: f.minPriceUsd } })
+  }
+  if (f.maxPriceUsd != null && Number.isFinite(f.maxPriceUsd) && f.maxPriceUsd > 0) {
+    and.push({ price: { less_than_equal: f.maxPriceUsd } })
   }
 
   if (f.tagSlugs?.length) {

@@ -10,7 +10,14 @@ import { absoluteMediaUrl } from '@/lib/media-url'
 import type { Locale } from '@/lib/i18n/copy'
 import { routeMap } from '@/lib/i18n/routes'
 import { propertyPublishedWhere } from '@/lib/property-published-where'
+import {
+  formatPropertyPrice,
+  getDopRateFromSiteConfig,
+  normalizePropertyCurrency,
+  toDisplayPrice,
+} from '@/lib/property-currency'
 import { getPayloadInstance } from '@/lib/payload-server'
+import { getSiteConfig } from '@/lib/site-data'
 import type { Property } from '@/payload-types'
 
 const copy = {
@@ -25,6 +32,7 @@ const copy = {
     tags: 'Etiquetas',
     amenities: 'Amenidades',
     gallery: 'Galería',
+    currency: 'Moneda',
   },
   en: {
     back: '← Back to Homes',
@@ -37,6 +45,7 @@ const copy = {
     tags: 'Tags',
     amenities: 'Amenities',
     gallery: 'Gallery',
+    currency: 'Currency',
   },
 } as const
 
@@ -54,7 +63,15 @@ function labelFromRelation(doc: unknown, locale: Locale): string | null {
   return null
 }
 
-export async function PropertyDetailPage({ locale, slug }: { locale: Locale; slug: string }) {
+export async function PropertyDetailPage({
+  locale,
+  slug,
+  currencyParam,
+}: {
+  locale: Locale
+  slug: string
+  currencyParam?: string
+}) {
   let prop: Property | undefined
   try {
     const payload = await getPayloadInstance()
@@ -74,6 +91,9 @@ export async function PropertyDetailPage({ locale, slug }: { locale: Locale; slu
 
   const t = copy[locale]
   const r = routeMap[locale]
+  const site = await getSiteConfig(locale)
+  const dopRate = getDopRateFromSiteConfig(site)
+  const selectedCurrency = normalizePropertyCurrency(currencyParam)
 
   const title = pickLocaleWithFallback(prop.title as string | { es?: string; en?: string }, locale)
   const zone = pickLocaleWithFallback(prop.location as string | { es?: string; en?: string }, locale)
@@ -133,8 +153,35 @@ export async function PropertyDetailPage({ locale, slug }: { locale: Locale; slu
         <h1 className="font-heading text-3xl font-semibold text-seed-forest md:text-4xl">{title}</h1>
         <p className="mt-2 text-muted-foreground">{zone}</p>
         <p className="mt-4 text-3xl font-bold text-seed-forest">
-          ${(prop.price as number).toLocaleString(locale === 'en' ? 'en-US' : 'es-DO')} USD
+          {formatPropertyPrice(
+            toDisplayPrice(prop.price as number, selectedCurrency, dopRate),
+            selectedCurrency,
+            locale,
+          )}
         </p>
+        <div className="mt-3 flex items-center gap-2 text-xs">
+          <span className="text-muted-foreground">{t.currency}:</span>
+          <Link
+            href={`${r.homes}/${slug}?moneda=USD`}
+            className={
+              selectedCurrency === 'USD'
+                ? 'rounded-full bg-seed-forest px-3 py-1 font-medium text-white'
+                : 'rounded-full border border-seed-forest/20 px-3 py-1 text-seed-forest'
+            }
+          >
+            USD
+          </Link>
+          <Link
+            href={`${r.homes}/${slug}?moneda=DOP`}
+            className={
+              selectedCurrency === 'DOP'
+                ? 'rounded-full bg-seed-forest px-3 py-1 font-medium text-white'
+                : 'rounded-full border border-seed-forest/20 px-3 py-1 text-seed-forest'
+            }
+          >
+            RD$
+          </Link>
+        </div>
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
           <span>
             {t.beds}: <strong className="text-foreground">{prop.beds as number}</strong>

@@ -25,6 +25,9 @@ export default async function HomesEnPage({
     cuartos?: string
     banos?: string
     etiquetas?: string
+    precioMin?: string
+    precioMax?: string
+    moneda?: string
   }>
 }) {
   const sp = await searchParams

@@ -25,6 +25,9 @@ const Q_TIPO = 'tipo'
 const Q_CUARTOS = 'cuartos'
 const Q_BANOS = 'banos'
 const Q_ETIQUETAS = 'etiquetas'
+const Q_MONEDA = 'moneda'
+const Q_PRECIO_MIN = 'precioMin'
+const Q_PRECIO_MAX = 'precioMax'
 
 export function PropertyFilters({
   locale,
@@ -45,6 +48,9 @@ export function PropertyFilters({
   const tipoSlug = searchParams.get(Q_TIPO) ?? ''
   const cuartos = searchParams.get(Q_CUARTOS) ?? ''
   const banos = searchParams.get(Q_BANOS) ?? ''
+  const moneda = searchParams.get(Q_MONEDA) ?? 'USD'
+  const precioMin = searchParams.get(Q_PRECIO_MIN) ?? ''
+  const precioMax = searchParams.get(Q_PRECIO_MAX) ?? ''
   const etiquetasRaw = searchParams.get(Q_ETIQUETAS) ?? ''
   const selectedTags = useMemo(
     () => new Set(etiquetasRaw.split(',').map((s) => s.trim()).filter(Boolean)),
@@ -95,6 +101,9 @@ export function PropertyFilters({
           type: 'Tipo de propiedad',
           beds: 'Mín. habitaciones',
           baths: 'Mín. baños',
+          currency: 'Moneda',
+          priceMin: 'Precio mínimo',
+          priceMax: 'Precio máximo',
           tags: 'Etiquetas',
           all: 'Todas',
           allMuni: 'Todos',
@@ -109,6 +118,9 @@ export function PropertyFilters({
           type: 'Property type',
           beds: 'Min. bedrooms',
           baths: 'Min. bathrooms',
+          currency: 'Currency',
+          priceMin: 'Min. price',
+          priceMax: 'Max. price',
           tags: 'Tags',
           all: 'All',
           allMuni: 'All',
@@ -263,6 +275,24 @@ export function PropertyFilters({
         </div>
 
         <div>
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t.currency}</Label>
+          <Select
+            value={moneda === 'DOP' ? 'DOP' : 'USD'}
+            onValueChange={(v) => {
+              if (v === 'USD' || v === 'DOP') setParams({ [Q_MONEDA]: v })
+            }}
+          >
+            <SelectTrigger className="mt-2 w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="USD">USD</SelectItem>
+              <SelectItem value="DOP">RD$ (DOP)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
           <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t.baths}</Label>
           <Select
             value={banos || 'any'}
@@ -283,6 +313,30 @@ export function PropertyFilters({
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div>
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t.priceMin}</Label>
+          <input
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={precioMin}
+            onChange={(e) => setParams({ [Q_PRECIO_MIN]: e.currentTarget.value || undefined })}
+            className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          />
+        </div>
+
+        <div>
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t.priceMax}</Label>
+          <input
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={precioMax}
+            onChange={(e) => setParams({ [Q_PRECIO_MAX]: e.currentTarget.value || undefined })}
+            className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          />
         </div>
       </div>
 

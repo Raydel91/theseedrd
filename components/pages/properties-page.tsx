@@ -6,12 +6,20 @@ import { PropertyFilters } from '@/components/site/property-filters'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { buildPropertyWhere } from '@/lib/build-property-where'
+import {
+  formatPropertyPrice,
+  getDopRateFromSiteConfig,
+  normalizePropertyCurrency,
+  toDisplayPrice,
+  toUsdPrice,
+} from '@/lib/property-currency'
 import type { Locale } from '@/lib/i18n/copy'
 import { routeMap } from '@/lib/i18n/routes'
 import { pickLocaleWithFallback } from '@/lib/pick-locale'
 import { getRDDivisionLabels } from '@/lib/rd-admin-divisions'
 import { absoluteMediaUrl } from '@/lib/media-url'
 import { getPayloadInstance } from '@/lib/payload-server'
+import { getSiteConfig } from '@/lib/site-data'
 import type { HouseType, Property, PropertyTag } from '@/payload-types'
 
 const copy = {
@@ -44,6 +52,8 @@ function hasActiveListingFilters(s: PropertiesListingSearch): boolean {
       s.tipo ||
       s.cuartos ||
       s.banos ||
+      s.precioMin ||
+      s.precioMax ||
       s.etiquetas,
   )
 }
@@ -70,6 +80,9 @@ export type PropertiesListingSearch = {
   cuartos?: string
   banos?: string
   etiquetas?: string
+  precioMin?: string
+  precioMax?: string
+  moneda?: string
 }
 
 export async function PropertiesPage({
@@ -85,6 +98,15 @@ export async function PropertiesPage({
     search.cuartos && !Number.isNaN(Number(search.cuartos)) ? Number(search.cuartos) : undefined
   const minBaths =
     search.banos && !Number.isNaN(Number(search.banos)) ? Number(search.banos) : undefined
+  const selectedCurrency = normalizePropertyCurrency(search.moneda)
+  const site = await getSiteConfig(locale)
+  const dopRate = getDopRateFromSiteConfig(site)
+  const minPriceInput =
+    search.precioMin && !Number.isNaN(Number(search.precioMin)) ? Number(search.precioMin) : undefined
+  const maxPriceInput =
+    search.precioMax && !Number.isNaN(Number(search.precioMax)) ? Number(search.precioMax) : undefined
+  const minPriceUsd = minPriceInput != null ? toUsdPrice(minPriceInput, selectedCurrency, dopRate) : undefined
+  const maxPriceUsd = maxPriceInput != null ? toUsdPrice(maxPriceInput, selectedCurrency, dopRate) : undefined
 
   const filters = {
     filterProvince: search.provincia,
@@ -93,6 +115,8 @@ export async function PropertiesPage({
     filterHouseTypeSlug: search.tipo,
     minBeds,
     minBaths,
+    minPriceUsd,
+    maxPriceUsd,
     tagSlugs,
   }
 
@@ -225,7 +249,11 @@ export async function PropertiesPage({
                     <h2 className="font-heading text-lg text-seed-forest group-hover:text-seed-emerald">{title}</h2>
                     {geoLine ? <p className="mt-1 text-sm text-muted-foreground">{zone}</p> : null}
                     <p className="mt-2 text-xl font-semibold text-seed-forest">
-                      ${(prop.price as number).toLocaleString(locale === 'en' ? 'en-US' : 'es-DO')}
+                      {formatPropertyPrice(
+                        toDisplayPrice(prop.price as number, selectedCurrency, dopRate),
+                        selectedCurrency,
+                        locale,
+                      )}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <span className="text-xs text-muted-foreground">

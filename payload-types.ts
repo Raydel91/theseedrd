@@ -1185,6 +1185,10 @@ export interface SiteConfig {
   heroTitle?: string | null;
   heroSubtitle?: string | null;
   welcomeText?: string | null;
+  /**
+   * Tipo de cambio global usado en /hogar y /homes cuando el usuario elige mostrar precios en pesos dominicanos (RD$).
+   */
+  propertyUsdToDopRate: number;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -1256,6 +1260,7 @@ export interface SiteConfigSelect<T extends boolean = true> {
   heroTitle?: T;
   heroSubtitle?: T;
   welcomeText?: T;
+  propertyUsdToDopRate?: T;
   meta?:
     | T
     | {

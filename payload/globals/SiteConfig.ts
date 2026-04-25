@@ -95,5 +95,16 @@ export const SiteConfig: GlobalConfig = {
       localized: true,
       label: 'Texto de bienvenida',
     },
+    {
+      name: 'propertyUsdToDopRate',
+      type: 'number',
+      required: true,
+      defaultValue: 60,
+      label: 'Tasa USD → DOP (propiedades)',
+      admin: {
+        description:
+          'Tipo de cambio global usado en /hogar y /homes cuando el usuario elige mostrar precios en pesos dominicanos (RD$).',
+      },
+    },
   ],
 }

@@ -55,7 +55,14 @@ export async function generateMetadata({
   }
 }
 
-export default async function HogarPropertyPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function HogarPropertyPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ moneda?: string }>
+}) {
   const { slug } = await params
-  return <PropertyDetailPage locale="es" slug={slug} />
+  const sp = await searchParams
+  return <PropertyDetailPage locale="es" slug={slug} currencyParam={sp.moneda} />
 }
