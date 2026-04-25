@@ -110,9 +110,10 @@ export const TeamMembers: CollectionConfig = {
         description:
           'Si se rellena, debe ser un usuario interno con «Equipo». Se limpia solo si el usuario pasa a cliente o pierde staff.',
       },
-      filterOptions: () => ({
-        and: [{ accountKind: { equals: 'internal' } }, { isStaff: { equals: true } }],
-      }),
+      filterOptions: {
+        accountKind: { equals: 'internal' },
+        isStaff: { equals: true },
+      },
     },
   ],
 }
