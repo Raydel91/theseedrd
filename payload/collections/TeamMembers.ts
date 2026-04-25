@@ -35,7 +35,11 @@ export const TeamMembers: CollectionConfig = {
         if (!canAccessPayloadAdmin(actor)) return
         if (req.context?.didDirectoryReconcile) return
         req.context = { ...(req.context || {}), didDirectoryReconcile: true }
-        await reconcileAllUsersDirectoryRecords(req.payload)
+        try {
+          await reconcileAllUsersDirectoryRecords(req.payload)
+        } catch (err) {
+          req.payload.logger.error({ err, msg: '[team-members.beforeOperation] reconcile skipped' })
+        }
       },
     ],
     beforeChange: [
