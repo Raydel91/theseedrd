@@ -60,6 +60,12 @@ function formatPostDate(iso: string | null | undefined, fallback: string): strin
   return d.toISOString().slice(0, 10)
 }
 
+function hasLexicalContent(content: BlogPost['content'] | null | undefined): boolean {
+  if (!content || typeof content !== 'object' || !('root' in content)) return false
+  const root = (content as { root?: { children?: unknown[] } }).root
+  return Array.isArray(root?.children) && root.children.length > 0
+}
+
 async function getMdxResolvedPost(locale: 'es' | 'en', slug: string): Promise<ResolvedBlogPost | null> {
   const entry = staticPosts[locale].find((p) => p.slug === slug)
   if (!entry) return null
@@ -92,6 +98,7 @@ async function getPayloadPost(locale: Locale, slug: string): Promise<ResolvedBlo
     })
     const doc = res.docs[0] as BlogPost | undefined
     if (!doc) return null
+    if (!hasLexicalContent(doc.content)) return null
     const title = typeof doc.title === 'string' ? doc.title : slug
     const excerpt = typeof doc.excerpt === 'string' ? doc.excerpt : ''
     const date = formatPostDate(doc.publishedAt ?? doc.createdAt, doc.createdAt.slice(0, 10))

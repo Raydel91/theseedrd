@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
 
 import type { User } from '@/payload-types'
+import { canAccessPayloadAdmin } from '@/payload/access/user-helpers'
 
 function linkedUserId(raw: unknown): string | number | null {
   if (raw == null) return null
@@ -21,6 +22,9 @@ export const TeamMembers: CollectionConfig = {
   },
   access: {
     read: () => true,
+    create: ({ req: { user } }) => canAccessPayloadAdmin(user as User),
+    update: ({ req: { user } }) => canAccessPayloadAdmin(user as User),
+    delete: ({ req: { user } }) => (user as User | undefined)?.isAdmin === true,
   },
   hooks: {
     beforeChange: [
@@ -106,9 +110,9 @@ export const TeamMembers: CollectionConfig = {
         description:
           'Si se rellena, debe ser un usuario interno con «Equipo». Se limpia solo si el usuario pasa a cliente o pierde staff.',
       },
-      filterOptions: {
+      filterOptions: () => ({
         and: [{ accountKind: { equals: 'internal' } }, { isStaff: { equals: true } }],
-      },
+      }),
     },
   ],
 }
