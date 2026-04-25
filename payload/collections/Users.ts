@@ -142,12 +142,13 @@ export const Users: CollectionConfig = {
         if (merged.accountKind === 'internal' && adminToggled && !isFirstUserBootstrap) {
           const payload = req.payload
           const actor = req.user as User | undefined
+          const actorId = actor?.id != null ? String(actor.id) : null
           const docId = originalDoc?.id
           const isSelf =
-            Boolean(actor?.id) &&
+            actorId != null &&
             operation === 'update' &&
             docId != null &&
-            String(actor.id) === String(docId)
+            actorId === String(docId)
 
           if (isSelf) {
             if (nextAdmin && !wasAdmin) {
@@ -156,7 +157,7 @@ export const Users: CollectionConfig = {
           } else {
             const targetsOther =
               operation === 'create' ||
-              (operation === 'update' && docId != null && String(docId) !== String(actor?.id))
+              (operation === 'update' && docId != null && String(docId) !== actorId)
 
             if (targetsOther) {
               const canAssign = await actorCanAssignAdminRole(payload, actor)
